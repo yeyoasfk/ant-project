@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import ScannerButton from '../components/ScannerButton';
 import ExpenseChart from '../components/ExpenseChart';
 import ConnectBankButton from '../components/ConnectBankButton';
+import AddExpenseButton from '../components/AddExpenseButto';
 
 // Conexión a tu Supabase en la Nube
 const supabase = createClient(
@@ -56,6 +57,8 @@ export default async function Home() {
         {/* --- BOTÓN DE INTELIGENCIA ARTIFICIAL --- */}
         <ScannerButton />
 
+        {/*--- BOTON DE GASTOS --- */}
+        <AddExpenseButton />
         {/* --- TARJETA 3: LISTA DE MOVIMIENTOS --- */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 bg-gray-50 border-b border-gray-100">

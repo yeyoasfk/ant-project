@@ -1,28 +1,28 @@
-// Lista negra de palabras clave que delatan un gasto hormiga
-export const HORMIGA_KEYWORDS = [
-  'OXXO',
-  'STARBUCKS',
-  'UBER',
-  'RAPPI',
-  'PEDIDOSYA',
-  'MCDONALDS',
-  'SPOTIFY',
-  'NETFLIX',
-  'AMAZON PRIME',
-  'DOGGIS',
-  'DUNKIN',
-  'CAFETERIA',
-  'HELA', // Por heladerías
-  'SUSHI'
-];
+export const detectarHormiga = (description: string) => {
+  // 1. Limpiamos el texto (minúsculas y sin espacios extra)
+  const cleanDesc = description.toLowerCase().trim();
 
-/**
- * Función que recibe una descripción (ej: "COMPRA OXXO PROVIDENCIA")
- * y devuelve TRUE si encuentra alguna palabra clave.
- */
-export function detectarHormiga(description: string): boolean {
-  const textoLimpio = description.toUpperCase(); // Convertimos a mayúsculas para no fallar
-  
-  // Revisamos si alguna palabra clave está dentro del texto
-  return HORMIGA_KEYWORDS.some((keyword) => textoLimpio.includes(keyword));
-}
+  // 2. LISTA NEGRA: Palabras que SIEMPRE son gasto hormiga
+  const hormigaKeywords = [
+    // Comida rápida / Antojos
+    'helado', 'chocolate', 'snack', 'papas', 'galletas', 'dulce', 
+    'sushi', 'pizza', 'hamburguesa', 'mc donalds', 'kfc', 'starbucks',
+    'completo', 'churrasco', 'tacos', 'empanada', 'postre',
+    
+    // Bebidas
+    'cerveza', 'vino', 'trago', 'bebida', 'coca cola', 'sprite', 
+    'fanta', 'jugo', 'cafe', 'café', 'redbull', 'monster',
+
+    // Vicios / Ocio
+    'cigarro', 'vape', 'tabaco', 'cine', 'entrada', 'juego', 
+    'suscripcion', 'netflix', 'spotify', 'youtube',
+    
+    // Apps de Delivery (Casi siempre son gastos extra)
+    'uber', 'rappi', 'pedidos ya', 'didi food', 'ubereats'
+  ];
+
+  // 3. Verificamos si alguna palabra prohibida está en la descripción
+  const esHormiga = hormigaKeywords.some(keyword => cleanDesc.includes(keyword));
+
+  return esHormiga;
+};

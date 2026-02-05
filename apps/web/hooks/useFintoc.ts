@@ -52,11 +52,31 @@ export default function useFintoc() {
         holderType: 'individual',
         product: 'movements',
         webhookUrl: 'https://hormiga-app.vercel.app/api/webhooks/fintoc', // <--- IMPORTANTE: Tu URL real
-        onSuccess: (link: any) => {
-          console.log('🎉 Éxito! Link creado:', link);
+        onSuccess: async (link: any) => {
+        console.log('🎉 Éxito! Link creado. Sincronizando historial...');
+        setIsLoading(true); // Mantenemos cargando mientras sincronizamos
+
+        try {
+          // LLAMAMOS A NUESTRO NUEVO ENDPOINT
+          const response = await fetch('/api/fintoc/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ exchange_token: link.exchangeToken }) // Ojo: exchangeToken suele venir camelCase en el widget
+          });
+
+          const data = await response.json();
+          console.log('Sincronización terminada:', data);
+          
+          alert(`¡Conexión exitosa! Se recuperaron ${data.movimientos_guardados || 0} movimientos antiguos.`);
+          window.location.reload(); // Recargamos para ver los datos frescos
+
+        } catch (err) {
+          console.error('Error sincronizando:', err);
+          alert('Cuenta vinculada, pero hubo un error trayendo el historial antiguo.');
+        } finally {
           setIsLoading(false);
-          alert("¡Cuenta vinculada con éxito!");
-        },
+        }
+      },
         onExit: () => {
           console.log('Usuario cerró el widget');
           setIsLoading(false);
