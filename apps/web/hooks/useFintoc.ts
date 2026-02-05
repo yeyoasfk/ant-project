@@ -53,30 +53,44 @@ export default function useFintoc() {
         product: 'movements',
         webhookUrl: 'https://hormiga-app.vercel.app/api/webhooks/fintoc', // <--- IMPORTANTE: Tu URL real
         onSuccess: async (link: any) => {
-        console.log('🎉 Éxito! Link creado. Sincronizando historial...');
-        setIsLoading(true); // Mantenemos cargando mientras sincronizamos
+          console.log('📦 Objeto Link recibido de Fintoc:', link); // <--- MIRA ESTO EN CONSOLA
 
-        try {
-          // LLAMAMOS A NUESTRO NUEVO ENDPOINT
-          const response = await fetch('/api/fintoc/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ exchange_token: link.exchangeToken }) // Ojo: exchangeToken suele venir camelCase en el widget
-          });
+          // 1. Buscamos el token en cualquiera de sus formas
+          const tokenReal = link.exchange_token || link.exchangeToken;
 
-          const data = await response.json();
-          console.log('Sincronización terminada:', data);
-          
-          alert(`¡Conexión exitosa! Se recuperaron ${data.movimientos_guardados || 0} movimientos antiguos.`);
-          window.location.reload(); // Recargamos para ver los datos frescos
+          if (!tokenReal) {
+              alert('Error: Fintoc no entregó un token de intercambio. Revisa la consola.');
+              console.error('❌ El objeto link no tiene exchange_token:', link);
+              return;
+          }
 
-        } catch (err) {
-          console.error('Error sincronizando:', err);
-          alert('Cuenta vinculada, pero hubo un error trayendo el historial antiguo.');
-        } finally {
-          setIsLoading(false);
-        }
-      },
+          console.log('🔑 Token a enviar:', tokenReal);
+          setIsLoading(true);
+
+          try {
+            const response = await fetch('/api/fintoc/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ exchange_token: tokenReal }) // Enviamos el que encontramos
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Error desconocido del servidor');
+            }
+
+            console.log('✅ Sincronización terminada:', data);
+            alert(`¡Éxito! Se recuperaron ${data.movimientos_guardados} movimientos.`);
+            window.location.reload(); 
+
+          } catch (err: any) {
+            console.error('❌ Error sincronizando:', err);
+            alert(`Error en descarga: ${err.message}`);
+          } finally {
+            setIsLoading(false);
+          }
+        },
         onExit: () => {
           console.log('Usuario cerró el widget');
           setIsLoading(false);

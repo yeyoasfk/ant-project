@@ -20,20 +20,22 @@ export async function POST(request: Request) {
     console.log('🔄 Iniciando sincronización de historial...');
 
     // 1. Intercambiar el token temporal por el LINK TOKEN real
-    // (Esto nos da permiso para leer la cuenta)
+    // (ESTA ES LA ÚNICA VEZ QUE DEBE APARECER ESTE CÓDIGO)
     const exchangeResp = await fetch(`https://api.fintoc.com/v1/links/exchange?exchange_token=${exchange_token}`, {
       method: 'GET',
       headers: { 'Authorization': FINTOC_SECRET_KEY }
     });
 
     if (!exchangeResp.ok) {
-        throw new Error('Error intercambiando token con Fintoc');
+        const errorBody = await exchangeResp.text();
+        console.error('😡 Fintoc rechazó el token:', errorBody); 
+        throw new Error(`Fintoc Error: ${errorBody}`);
     }
 
     const linkData = await exchangeResp.json();
-    const linkToken = linkData.link_token; // La llave maestra de esta cuenta
+    const linkToken = linkData.link_token; 
 
-    // 2. Obtener las cuentas bancarias de este Link
+    // 2. Obtener las cuentas bancarias
     const accountsResp = await fetch(`https://api.fintoc.com/v1/accounts?link_token=${linkToken}`, {
         headers: { 'Authorization': FINTOC_SECRET_KEY }
     });
@@ -41,32 +43,32 @@ export async function POST(request: Request) {
 
     let totalMovimientos = 0;
 
-    // 3. Para cada cuenta, bajamos los movimientos
+    // 3. Descargar movimientos de cada cuenta
     for (const account of accounts) {
         const movementsResp = await fetch(`https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}`, {
             headers: { 'Authorization': FINTOC_SECRET_KEY }
         });
         const movements = await movementsResp.json();
 
-        // 4. Guardar cada movimiento en Supabase
+        // 4. Guardar en Supabase
         for (const mov of movements) {
             const esHormiga = detectarHormiga(mov.description);
             
-            // Verificamos si ya existe para no duplicar (usando fintoc_transaction_id)
             const { error } = await supabase.from('transactions').upsert({
                 fintoc_transaction_id: mov.id,
-                amount: Math.abs(mov.amount), // Fintoc a veces manda negativo los gastos
+                amount: Math.abs(mov.amount),
                 description: mov.description,
-                date: mov.transaction_date || mov.post_date, // Fecha real
+                date: mov.transaction_date || mov.post_date,
                 is_hormiga: esHormiga,
                 category: esHormiga ? 'Gasto Hormiga' : 'General',
                 currency: mov.currency
-            }, { onConflict: 'fintoc_transaction_id' }); // Evita duplicados si corres esto 2 veces
+            }, { onConflict: 'fintoc_transaction_id' });
 
             if (!error) totalMovimientos++;
         }
     }
 
+    console.log(`✅ Éxito: ${totalMovimientos} movimientos guardados.`);
     return NextResponse.json({ success: true, movimientos_guardados: totalMovimientos });
 
   } catch (error: any) {
