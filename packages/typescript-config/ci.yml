@@ -1,0 +1,17 @@
+name: CI-Hormiga
+
+on: [push, pull_request]
+
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    steps: 
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v2
+    - name: Install dependencies
+      run: pnpm install 
+    - name: Lint
+      run: pnpm Lint
+    - name: Type Check  
+      run: pnpm turbo run build # Esto fallara si hay errores de tipos
+  war

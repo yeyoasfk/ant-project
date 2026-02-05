@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prueba Fintoc</title>
+    <script src="https://js.fintoc.com/v1/"></script>
+</head>
+<body style="background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh;">
+
+    <button id="btn" style="padding: 20px; font-size: 20px; cursor: pointer;">
+        Probar Fintoc
+    </button>
+
+    <script>
+        const publicKey = 'pk_test_rpJSkm-eynXsgfCszBP2GKGMjz6nBT8GQZvDswExPAw'; // <--- ¡PEGA TU LLAVE AQUÍ!
+
+        document.getElementById('btn').addEventListener('click', async () => {
+            console.log("Iniciando Fintoc...");
+            try {
+                const widget = await window.Fintoc.create({
+                    publicKey: publicKey,
+                    holderType: 'individual',
+                    product: 'movements',
+                    onSuccess: function(response) {
+                        console.log('Exito:', response);
+                        alert("Funcionó! Token: " + response.link_token);
+                    },
+                    onExit: function() {
+                        console.log('Widget cerrado');
+                    }
+                });
+                
+                widget.open();
+            } catch (err) {
+                console.error("Error:", err);
+                alert("Error: " + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
