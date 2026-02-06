@@ -1,94 +1,79 @@
 import { useState, useEffect } from 'react';
 
-// Le decimos a TypeScript que "Fintoc" existe en la ventana global
+// Declaramos que Fintoc existe en la ventana global
 declare global {
   interface Window {
     Fintoc: any;
   }
 }
 
-export default function useFintoc() {
+export const useFintoc = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  const initFintoc = () => {
+  // 1. Cargamos el script de Fintoc al iniciar
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://js.fintoc.com/v1/';
+    script.async = true;
+    script.onload = () => setIsReady(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const openWidget = async () => {
+    if (!isReady || !window.Fintoc) {
+      alert('El widget de Fintoc aún no carga. Espera un segundo.');
+      return;
+    }
+
     setIsLoading(true);
 
-    // 1. Revisamos si el script ya existe para no cargarlo doble
-    if (document.getElementById('fintoc-script')) {
-      openWidget();
-      return;
-    }
-
-    // 2. Si no existe, lo creamos
-    const script = document.createElement('script');
-    script.src = "https://js.fintoc.com/v1/";
-    script.id = 'fintoc-script';
-    
-    script.onload = () => {
-      console.log("✅ Script de Fintoc cargado correctamente");
-      openWidget();
-    };
-
-    script.onerror = () => {
-      console.error("❌ Error cargando Fintoc");
-      setIsLoading(false);
-      alert("No se pudo conectar con el banco. Revisa tu conexión.");
-    };
-
-    document.body.appendChild(script);
-  };
-
-  // Función interna para abrir la ventana
-  const openWidget = () => {
-    if (!window.Fintoc) {
-      console.error("Fintoc no está definido en window");
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      // A. PEDIMOS EL PASE ÚNICO (Link Intent) AL BACKEND
+      console.log('pedir pase al backend...');
+      const intentResp = await fetch('/api/fintoc/intent', { method: 'POST' });
+      const intentData = await intentResp.json();
+
+      if (intentData.error) throw new Error(intentData.error);
+      const widgetToken = intentData.widget_token;
+
+      // B. INICIAMOS EL WIDGET CON EL PASE
       const widget = window.Fintoc.create({
-        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY,
-        holderType: 'individual',
-        product: 'movements',
-        webhookUrl: 'https://hormiga-app.vercel.app/api/webhooks/fintoc', // <--- IMPORTANTE: Tu URL real
-        onSuccess: async (link: any) => {
-          console.log('📦 Objeto Link recibido de Fintoc:', link); // <--- MIRA ESTO EN CONSOLA
+        widgetToken: widgetToken, // <--- LA CLAVE DEL ÉXITO
+        onSuccess: async (linkIntent: any) => {
+          console.log('🎉 Éxito en Widget! Link Intent recibido:', linkIntent);
+          
+          // C. AHORA SÍ: El token viene en el Intent
+          // Según la IA, viene en linkIntent.exchange_token o similar.
+          // En modo Intent, el objeto que llega NO es el Link, es el Intent.
+          const exchangeToken = linkIntent.exchange_token; 
 
-          // 1. Buscamos el token en cualquiera de sus formas
-          const tokenReal = link.exchange_token || link.exchangeToken;
-
-          if (!tokenReal) {
-              alert('Error: Fintoc no entregó un token de intercambio. Revisa la consola.');
-              console.error('❌ El objeto link no tiene exchange_token:', link);
-              return;
+          if (!exchangeToken) {
+             alert('Error crítico: No llegó el exchange_token');
+             setIsLoading(false);
+             return;
           }
 
-          console.log('🔑 Token a enviar:', tokenReal);
-          setIsLoading(true);
-
+          // D. ENVIAMOS EL TOKEN A SINCRONIZAR
           try {
-            const response = await fetch('/api/fintoc/sync', {
+             const syncResp = await fetch('/api/fintoc/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ exchange_token: tokenReal }) // Enviamos el que encontramos
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok || data.error) {
-                throw new Error(data.error || 'Error desconocido del servidor');
-            }
-
-            console.log('✅ Sincronización terminada:', data);
-            alert(`¡Éxito! Se recuperaron ${data.movimientos_guardados} movimientos.`);
-            window.location.reload(); 
+                body: JSON.stringify({ exchange_token: exchangeToken })
+             });
+             const syncData = await syncResp.json();
+             
+             alert(`¡Conexión Perfecta! Se bajaron ${syncData.movimientos_guardados} movimientos.`);
+             window.location.reload();
 
           } catch (err: any) {
-            console.error('❌ Error sincronizando:', err);
-            alert(`Error en descarga: ${err.message}`);
+             alert(`Fallo en sync: ${err.message}`);
           } finally {
-            setIsLoading(false);
+             setIsLoading(false);
           }
         },
         onExit: () => {
@@ -98,14 +83,13 @@ export default function useFintoc() {
       });
 
       widget.open();
-    } catch (error) {
-      console.error("Error al crear el widget:", error);
+
+    } catch (error: any) {
+      console.error('Error iniciando widget:', error);
+      alert('Error al iniciar conexión: ' + error.message);
       setIsLoading(false);
     }
   };
 
-  return { 
-    initFintoc, 
-    isLoading 
-  };
-}
+  return { openWidget, isLoading, isReady };
+};
