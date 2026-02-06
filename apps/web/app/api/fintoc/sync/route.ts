@@ -11,49 +11,46 @@ const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY;
 
 export async function POST(request: Request) {
   try {
-    const { exchange_token } = await request.json();
+    const body = await request.json();
+    const { exchange_token } = body;
 
-    if (!FINTOC_SECRET_KEY) {
-      return NextResponse.json({ error: 'Falta configurar FINTOC_SECRET_KEY en Vercel' }, { status: 500 });
+    // 🛡️ Validación estricta
+    if (!exchange_token) {
+      return NextResponse.json({ error: 'Token vacío o nulo' }, { status: 400 });
     }
 
-    console.log('🔄 Iniciando sincronización de historial...');
+    console.log('🔄 Procesando token:', exchange_token);
 
-    // 1. Intercambiar el token temporal por el LINK TOKEN real
-    // (ESTA ES LA ÚNICA VEZ QUE DEBE APARECER ESTE CÓDIGO)
+    // 1. Intercambio de Token (UNA SOLA VEZ)
     const exchangeResp = await fetch(`https://api.fintoc.com/v1/links/exchange?exchange_token=${exchange_token}`, {
       method: 'GET',
-      headers: { 'Authorization': FINTOC_SECRET_KEY }
+      headers: { 'Authorization': FINTOC_SECRET_KEY! } // El '!' es clave
     });
 
     if (!exchangeResp.ok) {
-        const errorBody = await exchangeResp.text();
-        console.error('😡 Fintoc rechazó el token:', errorBody); 
-        throw new Error(`Fintoc Error: ${errorBody}`);
+        throw new Error(await exchangeResp.text());
     }
 
     const linkData = await exchangeResp.json();
     const linkToken = linkData.link_token; 
 
-    // 2. Obtener las cuentas bancarias
+    // 2. Obtener Cuentas
     const accountsResp = await fetch(`https://api.fintoc.com/v1/accounts?link_token=${linkToken}`, {
-        headers: { 'Authorization': FINTOC_SECRET_KEY }
+        headers: { 'Authorization': FINTOC_SECRET_KEY! }
     });
     const accounts = await accountsResp.json();
 
     let totalMovimientos = 0;
 
-    // 3. Descargar movimientos de cada cuenta
+    // 3. Descargar Movimientos
     for (const account of accounts) {
         const movementsResp = await fetch(`https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}`, {
-            headers: { 'Authorization': FINTOC_SECRET_KEY }
+            headers: { 'Authorization': FINTOC_SECRET_KEY! }
         });
         const movements = await movementsResp.json();
 
-        // 4. Guardar en Supabase
         for (const mov of movements) {
             const esHormiga = detectarHormiga(mov.description);
-            
             const { error } = await supabase.from('transactions').upsert({
                 fintoc_transaction_id: mov.id,
                 amount: Math.abs(mov.amount),
@@ -68,11 +65,10 @@ export async function POST(request: Request) {
         }
     }
 
-    console.log(`✅ Éxito: ${totalMovimientos} movimientos guardados.`);
     return NextResponse.json({ success: true, movimientos_guardados: totalMovimientos });
 
   } catch (error: any) {
-    console.error('❌ Error en sync:', error);
+    console.error('❌ Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
