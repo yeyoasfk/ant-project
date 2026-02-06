@@ -4,8 +4,7 @@ const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY;
 
 export async function POST() {
   try {
-    console.log('🎫 Solicitando Link Intent a Fintoc...');
-
+    // Pedimos a Fintoc un "Link Intent"
     const response = await fetch('https://api.fintoc.com/v1/link_intents', {
       method: 'POST',
       headers: {
@@ -20,14 +19,10 @@ export async function POST() {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Fintoc rechazó el Intent: ${errorText}`);
+        throw new Error(await response.text());
     }
 
     const data = await response.json();
-    console.log('✅ Intent creado. Widget Token:', data.widget_token);
-    
-    // Devolvemos el widget_token al frontend
     return NextResponse.json({ widget_token: data.widget_token });
 
   } catch (error: any) {

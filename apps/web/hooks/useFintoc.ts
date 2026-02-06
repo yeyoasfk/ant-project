@@ -1,79 +1,91 @@
 import { useState, useEffect } from 'react';
 
-// Declaramos que Fintoc existe en la ventana global
+// Esto evita que TypeScript reclame por window.Fintoc
 declare global {
   interface Window {
     Fintoc: any;
   }
 }
 
+// Fíjate aquí: "export const" (Exportación Nombrada)
 export const useFintoc = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // 1. Cargamos el script de Fintoc al iniciar
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://js.fintoc.com/v1/';
     script.async = true;
-    script.onload = () => setIsReady(true);
+    script.onload = () => {
+      console.log('✅ Script de Fintoc cargado');
+      setIsReady(true);
+    };
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
+  // Esta es la función clave: openWidget
   const openWidget = async () => {
-    if (!isReady || !window.Fintoc) {
-      alert('El widget de Fintoc aún no carga. Espera un segundo.');
+    if (!isReady) {
+      alert('Espera un segundo, Fintoc aún está cargando...');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // A. PEDIMOS EL PASE ÚNICO (Link Intent) AL BACKEND
-      console.log('pedir pase al backend...');
-      const intentResp = await fetch('/api/fintoc/intent', { method: 'POST' });
-      const intentData = await intentResp.json();
+      console.log('🎫 Pidiendo pase (Intent) al servidor...');
+      const response = await fetch('/api/fintoc/intent', { method: 'POST' });
+      
+      if (!response.ok) {
+        throw new Error('Error al contactar al servidor (Intent)');
+      }
 
-      if (intentData.error) throw new Error(intentData.error);
-      const widgetToken = intentData.widget_token;
+      const data = await response.json();
+      console.log('🎟️ Pase recibido:', data);
 
-      // B. INICIAMOS EL WIDGET CON EL PASE
+      if (!data.widget_token) {
+        throw new Error('El servidor no devolvió un widget_token');
+      }
+
       const widget = window.Fintoc.create({
-        widgetToken: widgetToken, // <--- LA CLAVE DEL ÉXITO
+        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY,
+        widgetToken: data.widget_token,
         onSuccess: async (linkIntent: any) => {
-          console.log('🎉 Éxito en Widget! Link Intent recibido:', linkIntent);
+          console.log('🎉 Éxito! Intent completado:', linkIntent);
           
-          // C. AHORA SÍ: El token viene en el Intent
-          // Según la IA, viene en linkIntent.exchange_token o similar.
-          // En modo Intent, el objeto que llega NO es el Link, es el Intent.
-          const exchangeToken = linkIntent.exchange_token; 
+          // En el flujo Intent, el token viene aquí
+          const exchangeToken = linkIntent.exchangeToken; 
+
+          console.log("buscando tokem.....",{
+            loQueLlega: linkIntent,
+            exchangeTokenLeido: exchangeToken
+          });
 
           if (!exchangeToken) {
-             alert('Error crítico: No llegó el exchange_token');
-             setIsLoading(false);
+             alert('Error: Fintoc no entregó el token de intercambio');
              return;
           }
 
-          // D. ENVIAMOS EL TOKEN A SINCRONIZAR
+          // Enviamos a sincronizar
           try {
-             const syncResp = await fetch('/api/fintoc/sync', {
+             await fetch('/api/fintoc/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ exchange_token: exchangeToken })
              });
-             const syncData = await syncResp.json();
              
-             alert(`¡Conexión Perfecta! Se bajaron ${syncData.movimientos_guardados} movimientos.`);
+             alert('¡Conexión Exitosa! Recarga la página para ver tus gastos.');
              window.location.reload();
 
-          } catch (err: any) {
-             alert(`Fallo en sync: ${err.message}`);
-          } finally {
-             setIsLoading(false);
+          } catch (err) {
+             console.error(err);
+             alert('Cuenta vinculada, pero hubo un error guardando los datos.');
           }
         },
         onExit: () => {
@@ -85,8 +97,8 @@ export const useFintoc = () => {
       widget.open();
 
     } catch (error: any) {
-      console.error('Error iniciando widget:', error);
-      alert('Error al iniciar conexión: ' + error.message);
+      console.error('❌ Error en openWidget:', error);
+      alert(`Error iniciando conexión: ${error.message}`);
       setIsLoading(false);
     }
   };
