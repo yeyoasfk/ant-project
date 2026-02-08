@@ -12,13 +12,23 @@
   },
   "dependencies": {
     "@fintoc/fintoc-js": "^1.1.2",
+    "@hookform/resolvers": "^5.2.2",
     "@repo/ui": "workspace:*",
     "@supabase/supabase-js": "^2.39.0",
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
     "next": "16.1.0",
     "openai": "^6.18.0",
     "react": "^19.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-countup": "^6.5.3",
     "react-dom": "^19.2.0",
-    "recharts": "^3.7.0"
+    "react-hook-form": "^7.71.1",
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
