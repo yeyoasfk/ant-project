@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import Script from 'next/script' // Usamos el componente nativo
 import { Loader2, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -9,40 +10,14 @@ const BankConnect = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [fintocReady, setFintocReady] = useState(false);
 
-  // 1. Cargar el script MANUALMENTE al montar el componente
-  useEffect(() => {
-    // Verificamos si ya existe (usando 'any' para que TS no llore)
-    if ((window as any).Fintoc) {
-      setFintocReady(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://js.fintoc.com/v1/";
-    script.async = true;
-    script.onload = () => {
-      console.log("✅ Script de Fintoc cargado");
-      setFintocReady(true);
-    };
-    script.onerror = () => {
-      console.error("❌ Error cargando script de Fintoc");
-    };
-    
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []);
+  // Verificamos que la llave exista (para debug)
+  const publicKey = process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY;
 
   const handleSuccess = async (exchangeToken: string) => {
     setIsLoading(true);
     try {
       console.log("✅ Token recibido:", exchangeToken);
-      alert(`Token recibido: ${exchangeToken}`); 
-      // Aquí conectaremos con tu backend pronto...
+      // Aquí simulamos la conexión exitosa
       router.push('/'); 
     } catch (error) {
       console.error("Error conectando banco:", error);
@@ -52,15 +27,20 @@ const BankConnect = () => {
   }
 
   const openFintoc = () => {
-    // Usamos (window as any) para evitar el error rojo que tenías
-    if (!(window as any).Fintoc) {
-      alert("Fintoc no está listo. Recarga la página.");
+    if (!publicKey) {
+      alert("Error: No se encontró la Public Key de Fintoc.");
       return;
     }
 
-    console.log("🚀 Abriendo Widget...");
+    if (!(window as any).Fintoc) {
+      alert("El widget aún está cargando. Intenta de nuevo en 2 segundos.");
+      return;
+    }
+
+    console.log("🚀 Iniciando Fintoc con Key:", publicKey.substring(0, 10) + "...");
+
     const widget = (window as any).Fintoc.create({
-      publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
+      publicKey: publicKey,
       holderType: 'individual',
       product: 'movements',
       country: 'cl',
@@ -76,28 +56,40 @@ const BankConnect = () => {
   }
 
   return (
-    <button 
-      onClick={openFintoc}
-      disabled={isLoading || !fintocReady}
-      className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="animate-spin size-5" />
-          Conectando...
-        </>
-      ) : !fintocReady ? (
-        <>
-          <Loader2 className="animate-spin size-5" />
-          Cargando Widget...
-        </>
-      ) : (
-        <>
-          <Plus className="size-5" />
-          Vincular Cuenta Bancaria
-        </>
-      )}
-    </button>
+    <>
+      {/* Carga limpia del script compatible con Vercel */}
+      <Script 
+        src="https://js.fintoc.com/v1/" 
+        strategy="lazyOnload"
+        onLoad={() => {
+          console.log("✅ Fintoc Script Cargado Correctamente");
+          setFintocReady(true);
+        }}
+      />
+
+      <button 
+        onClick={openFintoc}
+        disabled={isLoading || !fintocReady}
+        className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="animate-spin size-5" />
+            Conectando...
+          </>
+        ) : !fintocReady ? (
+          <>
+            <Loader2 className="animate-spin size-5" />
+            Cargando...
+          </>
+        ) : (
+          <>
+            <Plus className="size-5" />
+            Vincular Cuenta Bancaria
+          </>
+        )}
+      </button>
+    </>
   )
 }
 
