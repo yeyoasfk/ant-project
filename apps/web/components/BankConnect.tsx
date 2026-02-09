@@ -9,12 +9,11 @@ const BankConnect = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [fintocReady, setFintocReady] = useState(false);
 
-  // 1. CARGA MANUAL DEL SCRIPT (Método infalible)
+  // 1. Cargar el script MANUALMENTE (Método Clásico)
   useEffect(() => {
-    // Si ya existe Fintoc en la ventana, no hacemos nada
+    // Si ya existe, no lo recargamos
     if ((window as any).Fintoc) {
       setFintocReady(true);
-      console.log("✅ Fintoc ya estaba listo");
       return;
     }
 
@@ -23,17 +22,12 @@ const BankConnect = () => {
     script.async = true;
     
     script.onload = () => {
-      console.log("✅ Script de Fintoc inyectado y cargado");
       setFintocReady(true);
     };
 
-    script.onerror = () => {
-      console.error("❌ Error al cargar el script de Fintoc");
-    };
-    
     document.body.appendChild(script);
 
-    // Limpieza al salir de la página
+    // Limpieza
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
@@ -41,18 +35,8 @@ const BankConnect = () => {
     };
   }, []);
 
-  const handleSuccess = async (exchangeToken: string) => {
-    setIsLoading(true);
-    console.log("✅ ¡Éxito! Token recibido:", exchangeToken);
-    
-    // Simulación de éxito
-    router.push('/'); 
-  }
-
   const openFintoc = () => {
-    // Verificación de seguridad
     if (!(window as any).Fintoc) {
-      alert("El widget se está cargando... intenta en 2 segundos");
       return;
     }
 
@@ -62,10 +46,12 @@ const BankConnect = () => {
       product: 'movements',
       country: 'cl',
       onSuccess: function(response: any) {
-        handleSuccess(response.exchange_token);
+        setIsLoading(true);
+        console.log("✅ Token:", response.exchange_token);
+        router.push('/'); 
       },
       onExit: function() {
-        console.log("El usuario cerró el widget");
+        console.log("Widget cerrado");
       }
     });
 
@@ -76,17 +62,12 @@ const BankConnect = () => {
     <button 
       onClick={openFintoc}
       disabled={isLoading || !fintocReady}
-      className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50"
     >
       {isLoading ? (
         <>
           <Loader2 className="animate-spin size-5" />
           Conectando...
-        </>
-      ) : !fintocReady ? (
-        <>
-          <Loader2 className="animate-spin size-5" />
-          Cargando...
         </>
       ) : (
         <>
