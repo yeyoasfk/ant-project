@@ -7,67 +7,66 @@ import { useRouter } from 'next/navigation'
 const BankConnect = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [fintocReady, setFintocReady] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // 1. Variable de control
 
-  // 1. Cargar el script MANUALMENTE (Método Clásico)
+  // 2. Este efecto asegura que el componente solo "exista" en el cliente
   useEffect(() => {
-    // Si ya existe, no lo recargamos
-    if ((window as any).Fintoc) {
-      setFintocReady(true);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://js.fintoc.com/v1/";
-    script.async = true;
-    
-    script.onload = () => {
-      setFintocReady(true);
-    };
-
-    document.body.appendChild(script);
-
-    // Limpieza
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
+    setIsMounted(true);
   }, []);
 
   const openFintoc = () => {
-    if (!(window as any).Fintoc) {
-      return;
+    setIsLoading(true);
+
+    // Verificamos si Fintoc ya existe en la ventana
+    if ((window as any).Fintoc) {
+      const widget = (window as any).Fintoc.create({
+        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
+        holderType: 'individual',
+        product: 'movements',
+        country: 'cl',
+        onSuccess: function(response: any) {
+          console.log("✅ Token:", response.exchange_token);
+          router.push('/'); 
+        },
+        onExit: function() {
+          console.log("Widget cerrado");
+          setIsLoading(false);
+        }
+      });
+      widget.open();
+    } else {
+      // Si no existe, cargamos el script manualmente AHORA (Lazy Load real)
+      const script = document.createElement("script");
+      script.src = "https://js.fintoc.com/v1/";
+      script.async = true;
+      
+      script.onload = () => {
+        // Una vez cargado, nos llamamos a nosotros mismos recursivamente para abrir el widget
+        openFintoc(); 
+      };
+
+      script.onerror = () => {
+        console.error("Error cargando Fintoc");
+        setIsLoading(false);
+      };
+      
+      document.body.appendChild(script);
     }
-
-    const widget = (window as any).Fintoc.create({
-      publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
-      holderType: 'individual',
-      product: 'movements',
-      country: 'cl',
-      onSuccess: function(response: any) {
-        setIsLoading(true);
-        console.log("✅ Token:", response.exchange_token);
-        router.push('/'); 
-      },
-      onExit: function() {
-        console.log("Widget cerrado");
-      }
-    });
-
-    widget.open();
   }
+
+  // 3. Si no estamos en el cliente, no renderizamos NADA (Evita error #418)
+  if (!isMounted) return null;
 
   return (
     <button 
       onClick={openFintoc}
-      disabled={isLoading || !fintocReady}
+      disabled={isLoading}
       className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50"
     >
       {isLoading ? (
         <>
           <Loader2 className="animate-spin size-5" />
-          Conectando...
+          Cargando Fintoc...
         </>
       ) : (
         <>
