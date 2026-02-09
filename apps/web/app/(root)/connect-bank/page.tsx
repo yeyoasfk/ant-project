@@ -1,21 +1,25 @@
-import BankConnect from '../../../components/BankConnect'
 import HeaderBox from '../../../components/HeaderBox'
-import { createClient } from '../../../lib/supabase/server' // 👈 Usamos esto en lugar de user.actions
+import { createClient } from '../../../lib/supabase/server'
 import { redirect } from 'next/navigation'
+import dynamic from 'next/dynamic' // 1. Importamos dynamic
+
+// 2. Importamos el componente con SSR desactivado
+const BankConnect = dynamic(() => import('../../../components/BankConnect'), { 
+  ssr: false,
+  loading: () => (
+    // Spinner opcional mientras carga el js del botón
+    <div className="flex items-center gap-2 rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-400">
+      Cargando botón...
+    </div>
+  )
+})
 
 const ConnectBank = async () => {
-  // 1. Obtener el cliente de Supabase
   const supabase = await createClient();
-  
-  // 2. Obtener la sesión del usuario
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 3. Si no hay usuario, mandar al Login
-  if (!user) {
-    redirect('/sign-in');
-  }
+  if (!user) redirect('/sign-in');
 
-  // 4. Mapear los datos (Igual que en el Home)
   const loggedIn = { 
     firstName: user.user_metadata.first_name || 'Usuario', 
     lastName: user.user_metadata.last_name || '', 
@@ -39,6 +43,7 @@ const ConnectBank = async () => {
             </div>
             
             <div className="flex justify-start mt-4">
+                {/* 3. Usamos el componente dinámico */}
                 <BankConnect />
             </div>
         </div>
