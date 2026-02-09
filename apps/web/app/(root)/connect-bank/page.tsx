@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import dynamic from 'next/dynamic' 
 
 // 👇 AQUÍ ESTÁ EL CAMBIO CLAVE
-const BankConnect = dynamic(() => import('../../../components/BankConnect'), { 
+const BankConnect = dynamic(() => import('@/components/BankConnect'), { 
   ssr: false,
   loading: () => (
     <div className="flex items-center gap-2 rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-400">
