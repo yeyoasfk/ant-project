@@ -1,18 +1,7 @@
-// USAMOS RUTA RELATIVA EXACTA (3 niveles hacia atrás)
 import HeaderBox from '../../../components/HeaderBox'
 import { createClient } from '../../../lib/supabase/server'
 import { redirect } from 'next/navigation'
-import dynamic from 'next/dynamic' 
-
-// 👇 RUTA RELATIVA EXACTA
-const BankConnect = dynamic(() => import('../../../components/BankConnect'), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center gap-2 rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-400">
-      Cargando...
-    </div>
-  )
-})
+import BankConnectWrapper from '../../../components/BankConnectionWrapper' // 👈 Importamos el wrapper
 
 const ConnectBank = async () => {
   const supabase = await createClient();
@@ -21,9 +10,7 @@ const ConnectBank = async () => {
   if (!user) redirect('/sign-in');
 
   const loggedIn = { 
-    firstName: user.user_metadata.first_name || 'Usuario', 
-    lastName: user.user_metadata.last_name || '', 
-    email: user.email || '' 
+    firstName: user.user_metadata.first_name || 'Usuario'
   };
 
   return (
@@ -35,12 +22,15 @@ const ConnectBank = async () => {
           subtext="Vincula tu cuenta principal para rastrear tus gastos hormiga."
           user={loggedIn.firstName}
         />
+
         <div className="space-y-4">
             <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700">
                 🛡️ Usamos Fintoc para leer tus movimientos de forma segura.
             </div>
+            
             <div className="flex justify-start mt-4">
-                <BankConnect />
+                {/* 👈 Usamos el Wrapper directamente */}
+                <BankConnectWrapper />
             </div>
         </div>
       </div>
