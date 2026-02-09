@@ -1,13 +1,12 @@
-import HeaderBox from '../../../components/HeaderBox'
-import { createClient } from '../../../lib/supabase/server'
+import HeaderBox from '../../../components/HeaderBox' // 👈 Ruta relativa ajustada
+import { createClient } from '../../../lib/supabase/server' // 👈 Ruta relativa ajustada
 import { redirect } from 'next/navigation'
-import dynamic from 'next/dynamic' // 1. Importamos dynamic
+import dynamic from 'next/dynamic' 
 
-// 2. Importamos el componente con SSR desactivado
+// 👇 AQUÍ ESTÁ EL CAMBIO CLAVE
 const BankConnect = dynamic(() => import('../../../components/BankConnect'), { 
   ssr: false,
   loading: () => (
-    // Spinner opcional mientras carga el js del botón
     <div className="flex items-center gap-2 rounded-lg bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-400">
       Cargando botón...
     </div>
@@ -43,7 +42,6 @@ const ConnectBank = async () => {
             </div>
             
             <div className="flex justify-start mt-4">
-                {/* 3. Usamos el componente dinámico */}
                 <BankConnect />
             </div>
         </div>
