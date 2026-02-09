@@ -9,12 +9,17 @@ import { authFormSchema } from '../lib/utils'
 import CustomInput from './CustomInput'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import {REGIONES , COMUNAS_SANTIAGO} from '../app/constants/index' // Importamos las listas
+import { createClient } from '../lib/supabase/client'
+import { REGIONES, COMUNAS_SANTIAGO } from '../app/constants'
 
 const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
   const router = useRouter();
+  const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
+  // 1. Esquema de validación (El que ya tiene RUT estricto, fecha inteligente y pass fuerte)
   const formSchema = authFormSchema(type);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -25,24 +30,62 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
     },
   })
  
+  // 2. Manejo del Envío
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    try {
-       console.log("Datos validados:", data);
-       await new Promise(resolve => setTimeout(resolve, 2000));
-       
-       if (type === 'sign-up') router.push('/connect-bank');
-       else router.push('/');
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    } catch (error) {
-       console.log(error);
+    try {
+       if (type === 'sign-up') {
+           // --- REGISTRO ---
+           const { data: newUser, error } = await supabase.auth.signUp({
+               email: data.email,
+               password: data.password,
+               options: {
+                   emailRedirectTo: `${location.origin}/auth/callback`,
+                   data: {
+                       first_name: data.firstName,
+                       last_name: data.lastName,
+                       rut: data.rut,
+                       address: data.address1,
+                       city: data.city,
+                       state: data.state,
+                       dob: data.dateOfBirth
+                   }
+               }
+           });
+
+           if (error) throw error;
+
+           setSuccessMessage("¡Cuenta creada! Revisa tu correo (o Mailtrap) para activar tu cuenta.");
+       
+       } else {
+           // --- LOGIN ---
+           const { error } = await supabase.auth.signInWithPassword({
+               email: data.email,
+               password: data.password,
+           });
+
+           if (error) throw error;
+
+           router.push('/');
+           router.refresh();
+       }
+
+    } catch (error: any) {
+       console.error(error);
+       setErrorMessage(error.message === "Email not confirmed" 
+         ? "Debes confirmar tu correo electrónico antes de ingresar."
+         : error.message || "Error de autenticación."
+       );
     } finally {
        setIsLoading(false);
     }
   }
 
   // Preparamos las opciones para los Selects
-  const regionOptions = REGIONES.map(r => ({ label: r.name, value: r.name })); // Guardamos el nombre por simplicidad
+  const regionOptions = REGIONES.map(r => ({ label: r.name, value: r.name }));
   const comunaOptions = COMUNAS_SANTIAGO.map(c => ({ label: c, value: c }));
 
   return (
@@ -57,71 +100,85 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
                 </h1>
             </div>
         </header>
-
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {type === 'sign-up' && (
-                <>
-                    <div className="flex gap-4">
-                        <CustomInput control={form.control} name="firstName" label="Nombre" placeholder="Ej: Diego" />
-                        <CustomInput control={form.control} name="lastName" label="Apellido" placeholder="Ej: Hormiga" />
-                    </div>
-                    
-                    <CustomInput control={form.control} name="address1" label="Dirección" placeholder="Ej: Av. Providencia 1234" />
-                    
-                    <div className="flex gap-4">
-                        {/* SELECT DE REGIÓN */}
-                        <CustomInput 
-                            control={form.control} 
-                            name="state" 
-                            label="Región" 
-                            inputType="select" 
-                            options={regionOptions}
-                        />
-                        {/* SELECT DE COMUNA */}
-                        <CustomInput 
-                            control={form.control} 
-                            name="city" 
-                            label="Comuna" 
-                            inputType="select" 
-                            options={comunaOptions}
-                        />
-                    </div>
-                    
-                    <div className="flex gap-4">
-                        {/* Fecha Inteligente */}
-                        <CustomInput 
-                            control={form.control} 
-                            name="dateOfBirth" 
-                            label="Fecha Nacimiento" 
-                            placeholder="YYYY/MM/DD (Ej: 1999/01/01)" 
-                        />
-                        {/* RUT Chileno */}
-                        <CustomInput 
-                            control={form.control} 
-                            name="rut" 
-                            label="RUT" 
-                            placeholder="11111111-1" 
-                        />
-                    </div>
-                    
-                    {/* Código Postal (Opcional) */}
-                    <CustomInput control={form.control} name="postalCode" label="Código Postal (Opcional)" placeholder="Ej: 7500000" />
-                </>
-            )}
-
-            <CustomInput control={form.control} name="email" label="Email" placeholder="Ingresa tu correo" />
-            <CustomInput control={form.control} name="password" label="Contraseña" placeholder="********" type="password" />
-
-            <div className="flex flex-col gap-4 pt-4">
-                <button type="submit" disabled={isLoading} className="bg-bankGradient text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-form">
-                    {isLoading ? (
-                        <>
-                          <Loader2 size={20} className="animate-spin" /> Procesando...
-                        </>
-                    ) : type === 'sign-in' ? 'Ingresar' : 'Registrarse'}
-                </button>
+        
+        {/* ALERTAS */}
+        {successMessage && (
+            <div className="p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+                ✅ {successMessage}
             </div>
-        </form>
+        )}
+
+        {errorMessage && (
+            <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+                ⚠️ {errorMessage}
+            </div>
+        )}
+
+        {!successMessage && (
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {type === 'sign-up' && (
+                    <>
+                        <div className="flex gap-4">
+                            <CustomInput control={form.control} name="firstName" label="Nombre" placeholder="Ej: Diego" />
+                            <CustomInput control={form.control} name="lastName" label="Apellido" placeholder="Ej: Hormiga" />
+                        </div>
+                        
+                        <CustomInput control={form.control} name="address1" label="Dirección" placeholder="Ej: Av. Providencia 1234" />
+                        
+                        <div className="flex gap-4">
+                            {/* ✅ SELECT DE REGIÓN */}
+                            <CustomInput 
+                                control={form.control} 
+                                name="state" 
+                                label="Región" 
+                                inputType="select" 
+                                options={regionOptions}
+                            />
+                            {/* ✅ SELECT DE COMUNA */}
+                            <CustomInput 
+                                control={form.control} 
+                                name="city" 
+                                label="Comuna" 
+                                inputType="select" 
+                                options={comunaOptions}
+                            />
+                        </div>
+                        
+                        <div className="flex gap-4">
+                            {/* ✅ FECHA CON MÁSCARA AUTOMÁTICA (CustomInput maneja el /) */}
+                            <CustomInput 
+                                control={form.control} 
+                                name="dateOfBirth" 
+                                label="Fecha Nacimiento" 
+                                placeholder="YYYY/MM/DD" 
+                            />
+                            {/* ✅ RUT (Validación estricta en utils) */}
+                            <CustomInput 
+                                control={form.control} 
+                                name="rut" 
+                                label="RUT" 
+                                placeholder="11111111-1" 
+                            />
+                        </div>
+                        
+                        <CustomInput control={form.control} name="postalCode" label="Código Postal (Opcional)" placeholder="Ej: 7500000" />
+                    </>
+                )}
+
+                <CustomInput control={form.control} name="email" label="Email" placeholder="Ingresa tu correo" />
+                <CustomInput control={form.control} name="password" label="Contraseña" placeholder="********" type="password" />
+
+                <div className="flex flex-col gap-4 pt-4">
+                    <button type="submit" disabled={isLoading} className="bg-bankGradient text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-form">
+                        {isLoading ? (
+                            <>
+                              <Loader2 size={20} className="animate-spin" /> Procesando...
+                            </>
+                        ) : type === 'sign-in' ? 'Ingresar' : 'Registrarse'}
+                    </button>
+                </div>
+            </form>
+        )}
 
         <footer className="flex justify-center gap-1">
             <p className="text-14 font-normal text-gray-600">
