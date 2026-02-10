@@ -1,18 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "tasks": { 
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "NEXT_PUBLIC_FINTOC_PUBLIC_KEY",
+        "FINTOC_SECRET_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      ]
     },
-    "lint": {},
-    "test": {},
+    "check-types": {},
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "simulate": {
-       "cache": false
-    }
+    "lint": {}
   }
 }
