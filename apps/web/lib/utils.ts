@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { z } from "zod";
+import { ANT_EXPENSE_KEYWORDS, ANT_EXPENSE_THRESHOLD } from "@/app/constants/ant-expenses";
 
 // Utilidad para combinar clases de Tailwind (ya la tenías)
 export function cn(...inputs: ClassValue[]) {
@@ -39,6 +40,24 @@ export const getTransactionStatus = (date: Date) => {
 
   return date > twoDaysAgo ? "Procesando" : "Exitoso";
 };
+
+export function classifyAntExpense(description: string, amount: number) {
+  const descLower = description.toLowerCase();
+  
+  // Si el monto es positivo (es un abono/depósito), no es gasto
+  if (amount > 0) return null;
+
+  // Filtro de monto: Si el gasto es mayor al umbral, no es hormiga
+  if (Math.abs(amount) > ANT_EXPENSE_THRESHOLD) return null;
+
+  for (const group of ANT_EXPENSE_KEYWORDS) {
+    if (group.keywords.some(key => descLower.includes(key))) {
+      return group.category;
+    }
+  }
+
+  return null;
+}
 
 export const authFormSchema = (type: 'sign-in' | 'sign-up') => {
   return z.object({
