@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import FintocButton from '@/components/FintocButton' // 👈 Importación limpia
 
+export const metadata = {
+  title: 'Conectar Banco | Hormiga',
+};
+
 const ConnectBank = async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,16 +15,12 @@ const ConnectBank = async () => {
 
   return (
     
-    <section className="no-scrollbar flex w-full flex-1 flex-col gap-8 px-5 sm:px-8 py-7 lg:py-12">
+    <section className="flex flex-col p-8 lg:p-12 w-full">
       <div className="flex flex-col gap-8">
-        <head>
-            <meta name="referrer" content="no-referrer-when-downgrade" />
-        </head>
+
         <HeaderBox 
-          type="greeting"
-          title="Conecta tu Banco"
-          subtext="Vincula tu cuenta principal para rastrear tus gastos hormiga."
-          user={user.user_metadata.first_name || 'Usuario'}
+          title="Conectar Banco"
+          subtext="Vincula tu cuenta principal para rastrear tus gastos hormiga de forma segura."
         />
 
         <div className="space-y-4">

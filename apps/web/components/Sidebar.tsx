@@ -18,10 +18,16 @@ const Sidebar = ({ user }: { user: any }) => {
       <nav className="flex flex-col gap-4">
         {/* LOGO */}
         <Link href="/" className="mb-12 cursor-pointer flex items-center gap-2 px-4">
-          <div className="size-[40px] bg-bankGradient rounded-full flex items-center justify-center text-white font-bold text-xl">
-             🐜
-          </div>
-          <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1 max-xl:hidden">Hormiga</h1>
+          <Image 
+            src="/icons/logo.png" // 👈 Cambiado de emoji a tu archivo PNG real
+            width={40}
+            height={40}
+            alt="Hormiga logo"
+            className="size-[40px]"
+          />
+          <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1 max-xl:hidden">
+            Hormiga
+          </h1>
         </Link>
 
         {/* LINKS DE NAVEGACIÓN */}

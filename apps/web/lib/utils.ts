@@ -44,10 +44,8 @@ export const getTransactionStatus = (date: Date) => {
 export function classifyAntExpense(description: string, amount: number) {
   const descLower = description.toLowerCase();
   
-  // Si el monto es positivo (es un abono/depósito), no es gasto
-  if (amount > 0) return null;
+  if (amount > 0) return null; // Sigue ignorando depósitos
 
-  // Filtro de monto: Si el gasto es mayor al umbral, no es hormiga
   if (Math.abs(amount) > ANT_EXPENSE_THRESHOLD) return null;
 
   for (const group of ANT_EXPENSE_KEYWORDS) {
@@ -56,7 +54,8 @@ export function classifyAntExpense(description: string, amount: number) {
     }
   }
 
-  return null;
+  // 🚩 CAMBIO CLAVE: En lugar de return null, usa esto:
+  return "Otros Gastos"; 
 }
 
 export const authFormSchema = (type: 'sign-in' | 'sign-up') => {
