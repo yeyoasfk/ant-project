@@ -83,60 +83,59 @@ export async function linkBankAccount({
  */
 export async function getAntExpenses(linkToken: string) {
   const headers = {
-    'Authorization': FINTOC_SECRET_KEY, // 👈 AQUÍ TAMBIÉN LA USAMOS DIRECTA
+    'Authorization': FINTOC_SECRET_KEY,
     'Content-Type': 'application/json',
   };
 
-  console.log("🚀 [API] Pidiendo cuentas para token:", linkToken);
-
   try {
-    // PASO A: Obtener cuentas
+    // 1. OBTENER CUENTAS
     const accountsResponse = await fetch(
       `https://api.fintoc.com/v1/accounts?link_token=${linkToken}`, 
       { headers, next: { revalidate: 0 } }
     );
-
-    if (!accountsResponse.ok) {
-      // Si falla aquí, imprimimos la llave usada (oculta) para depurar
-      const errorBody = await accountsResponse.text();
-      console.error(`❌ Error al obtener cuentas (Step 1): ${accountsResponse.status}`);
-      console.error(`   Llave usada: ${FINTOC_SECRET_KEY.substring(0, 10)}...`);
-      return [];
-    }
-
     const accounts = await accountsResponse.json();
 
     if (!Array.isArray(accounts) || accounts.length === 0) {
-      console.error("⚠️ El Link no tiene cuentas.");
+      console.log("⚠️ [Diagnóstico] No se encontraron cuentas en este Link.");
       return [];
     }
 
-    const accountId = accounts[0].id;
-    console.log("✅ [API] Cuenta encontrada:", accounts[0].name);
+    // DIAGNÓSTICO: Ver qué cuentas encontró
+    console.log("📋 [Diagnóstico] Cuentas encontradas:", accounts.map(a => `${a.name} (${a.id})`));
+
+    // Seleccionamos la primera cuenta (AQUÍ PUEDE ESTAR EL ERROR si elige la incorrecta)
+    const selectedAccount = accounts[0];
+    console.log(`✅ [Diagnóstico] Usando cuenta: ${selectedAccount.name}`);
     
-    // PASO B: Obtener movimientos
+    // 2. OBTENER MOVIMIENTOS
+    // Pedimos los últimos 100 movimientos
     const movementsResponse = await fetch(
-      `https://api.fintoc.com/v1/accounts/${accountId}/movements?link_token=${linkToken}`, 
+      `https://api.fintoc.com/v1/accounts/${selectedAccount.id}/movements?link_token=${linkToken}&limit=100`, 
       { headers, next: { revalidate: 0 } }
     );
-
-    if (!movementsResponse.ok) {
-      console.error(`❌ Error al obtener movimientos: ${movementsResponse.status}`);
-      return [];
-    }
-
     const movements = await movementsResponse.json();
 
     if (!Array.isArray(movements)) return [];
 
-    // PASO C: Procesar
-    return movements.map((mov: any) => ({
-      id: mov.id,
-      description: mov.description,
-      amount: mov.amount,
-      date: mov.post_date || new Date().toISOString(), 
-      antCategory: classifyAntExpense(mov.description, mov.amount)
-    })).filter((item: any) => item.antCategory !== null);
+    console.log(`📥 [Diagnóstico] Movimientos RAW descargados: ${movements.length}`);
+
+    // 3. CLASIFICAR (Filtro Hormiga)
+    const filteredMovements = movements.map((mov: any) => {
+      const category = classifyAntExpense(mov.description, mov.amount);
+      // Logueamos solo si detecta algo para no llenar la consola
+      if (category) console.log(`🐜 Hormiga detectado: ${mov.description} -> ${category}`);
+      
+      return {
+        id: mov.id,
+        description: mov.description,
+        amount: mov.amount,
+        date: mov.post_date || new Date().toISOString(), 
+        antCategory: category
+      };
+    }).slice(0, 10);
+    console.log(`🚀 [Diagnóstico] Movimientos finales a mostrar: ${filteredMovements.length}`);
+
+    return filteredMovements;
 
   } catch (error) {
     console.error("❌ Error crítico API:", error);
