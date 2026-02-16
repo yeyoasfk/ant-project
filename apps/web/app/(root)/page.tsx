@@ -22,35 +22,43 @@ const Home = async () => {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  // 2. CORRECCIÓN "$NaN": Preparamos las cuentas con datos por defecto
-  // Si Fintoc no guardó el saldo, ponemos 0 para evitar errores visuales
+  // 2. PREPARAR CUENTAS (Evitar $NaN)
   const accounts = rawAccounts?.map((acc) => ({
     ...acc,
     currentBalance: acc.currentBalance || 0, 
-    mask: acc.mask || '****', // Máscara por defecto si falta
+    mask: acc.mask || '****', 
     officialName: acc.institution_name || 'Banco'
   })) || [];
 
-  // 3. OBTENER GASTOS (Solo si hay cuentas reales)
-  let expenses: any[] = [];
+  // 3. OBTENER GASTOS DE TODAS LAS CUENTAS (CORRECCIÓN CRÍTICA)
+  let rawExpenses: any[] = [];
   
   if (accounts.length > 0) {
-    // Usamos el ID de la primera cuenta encontrada
-    // getAntExpenses en bank.actions.ts debe manejar el try/catch internamente
-    expenses = await getAntExpenses(accounts[0].fintoc_id);
+    try {
+      // Ejecutamos la búsqueda en paralelo para todas las cuentas vinculadas
+      const expensesPromises = accounts.map((account) => 
+        getAntExpenses(account.fintoc_id)
+      );
+      
+      const results = await Promise.all(expensesPromises);
+      
+      // "Aplanamos" los resultados: convertimos varios arrays en una sola lista gigante
+      rawExpenses = results.flat();
+      
+    } catch (error) {
+      console.error("Error obteniendo gastos en Home:", error);
+    }
   }
 
-  // 4. SANITIZAR GASTOS (Evita pantallas rojas por datos corruptos)
-  const sanitizedExpenses = expenses.map((e: any) => ({
+  // 4. SANITIZAR Y ORDENAR GASTOS
+  const sanitizedExpenses = rawExpenses.map((e: any) => ({
     ...e,
     amount: Number(e.amount) || 0,
-    // Si la fecha viene nula, asignamos HOY para que no rompa el filtro
     date: e.date ? new Date(e.date) : new Date(),
-    // Aseguramos que la descripción sea un string
     description: e.description || 'Sin descripción'
-  }));
+  })).sort((a, b) => b.date.getTime() - a.date.getTime()); // Ordenar por fecha desc
 
-  // 5. FILTRO: Transacciones de las últimas 24 horas
+  // 5. FILTRO: Transacciones de las últimas 24 horas (Para la lista de "Hoy")
   const oneDayAgo = new Date();
   oneDayAgo.setHours(oneDayAgo.getHours() - 24);
   
@@ -59,20 +67,20 @@ const Home = async () => {
     return tDate > oneDayAgo;
   });
 
-  // 6. DATOS DE USUARIO PARA EL SIDEBAR
+  // 6. DATOS DE USUARIO
   const loggedInUser = {
     firstName: user.user_metadata?.first_name || 'Diego',
     lastName: user.user_metadata?.last_name || 'Albornoz',
     email: user.email
   };
 
-  // Cálculo del ahorro total estimado
+  // Cálculo del ahorro total estimado (15% de todos los gastos históricos)
   const totalSavings = sanitizedExpenses.reduce((acc, curr) => acc + Math.abs(curr.amount), 0) * 0.15;
 
   return (
     <section className="home no-scrollbar flex w-full flex-row max-xl:flex-col overflow-hidden">
       
-      {/* --- COLUMNA IZQUIERDA (DASHBOARD PRINCIPAL) --- */}
+      {/* --- COLUMNA IZQUIERDA --- */}
       <div className="no-scrollbar flex w-full flex-1 flex-col gap-8 px-5 py-7 lg:px-8 xl:overflow-y-auto">
         <header className="home-header">
           <HeaderBox 
@@ -86,13 +94,13 @@ const Home = async () => {
         {/* FILA SUPERIOR: GRÁFICO Y RESUMEN */}
         <div className="flex flex-col gap-6 xl:flex-row w-full">
           
-          {/* Gráfico */}
+          {/* Gráfico (Muestra historial completo) */}
           <div className="flex-1 w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm min-h-[300px]">
             {sanitizedExpenses.length > 0 ? (
               <AntExpenseChart data={sanitizedExpenses} />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-gray-400">
-                <p>No se encontraron gastos hormiga recientes.</p>
+                <p>No se encontraron gastos recientes.</p>
                 {accounts.length === 0 && (
                   <Link href="/connect-bank" className="text-sm font-semibold text-blue-600 hover:underline">
                     Vincula tu banco para comenzar
@@ -129,7 +137,7 @@ const Home = async () => {
               href="/transaction-history" 
               className="text-14 font-semibold text-blue-600 hover:underline"
             >
-              Ver todas
+              Ver todas ({sanitizedExpenses.length})
             </Link>
           </div>
 
@@ -152,18 +160,24 @@ const Home = async () => {
                 </div>
               ))
             ) : (
-              <div className="flex items-center justify-center py-6 text-gray-500">
-                <p>No hay movimientos hoy 🍃</p>
+              <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                <p>No hay movimientos en las últimas 24 hrs 🍃</p>
+                {/* Ayuda visual: Si hay gastos históricos pero no hoy */}
+                {sanitizedExpenses.length > 0 && (
+                  <p className="text-xs text-blue-500 mt-2">
+                    (Pero tienes {sanitizedExpenses.length} gastos antiguos en el historial)
+                  </p>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* --- COLUMNA DERECHA (SIDEBAR) --- */}
+      {/* --- COLUMNA DERECHA --- */}
       <RightSidebar 
         user={loggedInUser}
-        transactions={sanitizedExpenses}
+        transactions={sanitizedExpenses} // Pasamos TODO el historial, no solo lo de hoy
         banks={accounts.slice(0, 2)} 
       />
     </section>
