@@ -6,7 +6,7 @@ import { classifyAntExpense } from '../utils'
 
 // 👇 PEGA TU LLAVE SECRETA AQUÍ ENTRE LAS COMILLAS (La que empieza con sk_live_)
 // Esto es temporal para confirmar que la llave funciona.
-const FINTOC_SECRET_KEY_HARDCODED = "sk_live_Yg-nQLdQXB5zKnsDrQAVZxryB7AwoeR3VUQPXVKdaX8"; 
+const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY!; 
 
 /**
  * 1. GUARDAR CUENTA EN SUPABASE
@@ -38,7 +38,7 @@ export async function linkBankAccount({
         {
           method: 'GET',
           headers: {
-            'Authorization': FINTOC_SECRET_KEY_HARDCODED, // Usamos la variable directa
+            'Authorization': FINTOC_SECRET_KEY, // Usamos la variable directa
             'Content-Type': 'application/json',
           }
         }
@@ -83,7 +83,7 @@ export async function linkBankAccount({
  */
 export async function getAntExpenses(linkToken: string) {
   const headers = {
-    'Authorization': FINTOC_SECRET_KEY_HARDCODED, // 👈 AQUÍ TAMBIÉN LA USAMOS DIRECTA
+    'Authorization': FINTOC_SECRET_KEY, // 👈 AQUÍ TAMBIÉN LA USAMOS DIRECTA
     'Content-Type': 'application/json',
   };
 
@@ -100,7 +100,7 @@ export async function getAntExpenses(linkToken: string) {
       // Si falla aquí, imprimimos la llave usada (oculta) para depurar
       const errorBody = await accountsResponse.text();
       console.error(`❌ Error al obtener cuentas (Step 1): ${accountsResponse.status}`);
-      console.error(`   Llave usada: ${FINTOC_SECRET_KEY_HARDCODED.substring(0, 10)}...`);
+      console.error(`   Llave usada: ${FINTOC_SECRET_KEY.substring(0, 10)}...`);
       return [];
     }
 

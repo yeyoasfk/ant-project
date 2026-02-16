@@ -30,7 +30,7 @@ const FintocButton = () => {
 
     const widget = Fintoc.create({
         // ASEGÚRATE QUE ESTA SEA TU LLAVE LIVE REAL (pk_live_...)
-        publicKey: 'pk_live_Q6sbmtQzoA8fyY_q-uujBfWFYfcKt_VU8QpGr2dFR1U',
+        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
         holderType: 'individual',
         product: 'movements',
         country: 'cl',
