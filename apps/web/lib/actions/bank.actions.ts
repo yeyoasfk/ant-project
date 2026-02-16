@@ -88,54 +88,48 @@ export async function getAntExpenses(linkToken: string) {
   };
 
   try {
-    // 1. OBTENER CUENTAS
+    // 1. OBTENER TODAS LAS CUENTAS
     const accountsResponse = await fetch(
       `https://api.fintoc.com/v1/accounts?link_token=${linkToken}`, 
       { headers, next: { revalidate: 0 } }
     );
     const accounts = await accountsResponse.json();
 
-    if (!Array.isArray(accounts) || accounts.length === 0) {
-      console.log("⚠️ [Diagnóstico] No se encontraron cuentas en este Link.");
-      return [];
+    if (!Array.isArray(accounts) || accounts.length === 0) return [];
+
+    // 2. BUSCAR MOVIMIENTOS EN TODAS LAS CUENTAS (Bucle)
+    let allMovements: any[] = [];
+
+    // Recorremos cada cuenta para sacar sus movimientos
+    for (const account of accounts) {
+      try {
+        const moveResponse = await fetch(
+          `https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}&limit=30`, 
+          { headers, next: { revalidate: 0 } }
+        );
+        
+        if (moveResponse.ok) {
+          const moves = await moveResponse.json();
+          if (Array.isArray(moves)) {
+            // Agregamos los movimientos encontrados a la lista general
+            allMovements = [...allMovements, ...moves];
+          }
+        }
+      } catch (err) {
+        console.error(`Error leyendo cuenta ${account.id}`, err);
+      }
     }
 
-    // DIAGNÓSTICO: Ver qué cuentas encontró
-    console.log("📋 [Diagnóstico] Cuentas encontradas:", accounts.map(a => `${a.name} (${a.id})`));
-
-    // Seleccionamos la primera cuenta (AQUÍ PUEDE ESTAR EL ERROR si elige la incorrecta)
-    const selectedAccount = accounts[0];
-    console.log(`✅ [Diagnóstico] Usando cuenta: ${selectedAccount.name}`);
-    
-    // 2. OBTENER MOVIMIENTOS
-    // Pedimos los últimos 100 movimientos
-    const movementsResponse = await fetch(
-      `https://api.fintoc.com/v1/accounts/${selectedAccount.id}/movements?link_token=${linkToken}&limit=100`, 
-      { headers, next: { revalidate: 0 } }
-    );
-    const movements = await movementsResponse.json();
-
-    if (!Array.isArray(movements)) return [];
-
-    console.log(`📥 [Diagnóstico] Movimientos RAW descargados: ${movements.length}`);
-
-    // 3. CLASIFICAR (Filtro Hormiga)
-    const filteredMovements = movements.map((mov: any) => {
-      const category = classifyAntExpense(mov.description, mov.amount);
-      // Logueamos solo si detecta algo para no llenar la consola
-      if (category) console.log(`🐜 Hormiga detectado: ${mov.description} -> ${category}`);
-      
-      return {
-        id: mov.id,
-        description: mov.description,
-        amount: mov.amount,
-        date: mov.post_date || new Date().toISOString(), 
-        antCategory: category
-      };
-    }).slice(0, 10);
-    console.log(`🚀 [Diagnóstico] Movimientos finales a mostrar: ${filteredMovements.length}`);
-
-    return filteredMovements;
+    // 3. MOSTRAR TODO (Sin filtro estricto por ahora)
+    // Esto asegura que veas datos si o si.
+    return allMovements.map((mov: any) => ({
+      id: mov.id,
+      description: mov.description,
+      amount: mov.amount,
+      date: mov.post_date || new Date().toISOString(), 
+      // Si no es hormiga, le ponemos "Otros" para que no se oculte
+      antCategory: classifyAntExpense(mov.description, mov.amount) || "Gasto General" 
+    }));
 
   } catch (error) {
     console.error("❌ Error crítico API:", error);
