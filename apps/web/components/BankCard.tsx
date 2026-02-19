@@ -17,6 +17,25 @@ const BankCard = ({
   isLink = true 
 }: CreditCardProps) => {
   
+  // 🛡️ VALIDACIÓN Y SANITIZACIÓN
+  if (!account) {
+    console.error("❌ [BankCard] account es undefined o null");
+    return (
+      <div className="flex h-[190px] w-full max-w-[320px] items-center justify-center rounded-[20px] border border-gray-300 bg-gray-100">
+        <p className="text-gray-500">Error: Cuenta no disponible</p>
+      </div>
+    );
+  }
+
+  // Sanitizar datos de la cuenta
+  const safeBalance = typeof account.currentBalance === 'number' && !isNaN(account.currentBalance)
+    ? account.currentBalance
+    : Number(account.currentBalance) || 0;
+  
+  const safeMask = account.mask || '****';
+  const safeName = account.name || account.officialName || account.institution_name || userName;
+  const safeUserName = userName || 'Usuario';
+
   // 1. Definimos el estilo del fondo (Azul o Morado)
   const bgStyle = color === "purple" 
     ? "bg-gradient-to-r from-purple-500 to-indigo-600"
@@ -29,24 +48,24 @@ const BankCard = ({
         <div className="relative z-10 flex size-full flex-col justify-between rounded-l-[20px] bg-gray-700/10 px-5 pb-4 pt-5">
           <div>
             <h1 className="text-16 font-semibold text-white">
-              {account.name || userName}
+              {safeName}
             </h1>
             <p className="font-ibm-plex-serif font-black text-white">
-              {formatAmount(account.currentBalance)}
+              {formatAmount(safeBalance)}
             </p>
           </div>
 
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
               <h1 className="text-12 font-semibold text-white">
-                {userName}
+                {safeUserName}
               </h1>
               <h2 className="text-12 font-semibold text-white">
                 ●● / ●●
               </h2>
             </div>
             <p className="text-14 font-semibold tracking-[1.1px] text-white">
-              ●●●● ●●●● ●●●● <span className="text-16">{account.mask || '1234'}</span>
+              ●●●● ●●●● ●●●● <span className="text-16">{safeMask}</span>
             </p>
           </div>
         </div>
@@ -74,7 +93,7 @@ const BankCard = ({
   return (
     <div className="flex flex-col">
       {/* 3. Renderizamos la Tarjeta (Como Link o como Div simple) */}
-      {isLink ? (
+      {isLink && account.id ? (
         <Link href={`/transaction-history/?id=${account.id}`} className={cardClasses}>
           <CardContent />
         </Link>

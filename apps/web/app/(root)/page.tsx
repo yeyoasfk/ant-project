@@ -16,56 +16,134 @@ const Home = async () => {
   if (!user) redirect('/sign-in');
 
   // 1. OBTENER CUENTAS (Desde Supabase)
-  const { data: rawAccounts } = await supabase
+  console.log("🔍 [Home] Obteniendo cuentas bancarias para usuario:", user.id);
+  const { data: rawAccounts, error: accountsError } = await supabase
     .from('bank_accounts')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
+  if (accountsError) {
+    console.error("❌ [Home] Error obteniendo cuentas:", accountsError);
+  }
+
+  console.log("📊 [Home] Cuentas raw obtenidas:", rawAccounts?.length || 0);
+
   // 2. PREPARAR CUENTAS (Evitar $NaN)
-  const accounts = rawAccounts?.map((acc) => ({
-    ...acc,
-    currentBalance: acc.currentBalance || 0, 
-    mask: acc.mask || '****', 
-    officialName: acc.institution_name || 'Banco'
-  })) || [];
+  const accounts = rawAccounts?.map((acc) => {
+    const sanitized = {
+      ...acc,
+      currentBalance: typeof acc.currentBalance === 'number' ? acc.currentBalance : Number(acc.currentBalance) || 0, 
+      mask: acc.mask || '****', 
+      officialName: acc.institution_name || acc.officialName || 'Banco',
+      fintoc_id: acc.fintoc_id || acc.fintoc_link_id || null
+    };
+    console.log("💳 [Home] Cuenta sanitizada:", {
+      id: sanitized.id,
+      institution: sanitized.officialName,
+      balance: sanitized.currentBalance,
+      fintoc_id: sanitized.fintoc_id ? sanitized.fintoc_id.substring(0, 20) + "..." : "SIN FINTOC_ID"
+    });
+    return sanitized;
+  }) || [];
+
+  console.log("✅ [Home] Total de cuentas preparadas:", accounts.length);
 
   // 3. OBTENER GASTOS DE TODAS LAS CUENTAS (CORRECCIÓN CRÍTICA)
   let rawExpenses: any[] = [];
   
   if (accounts.length > 0) {
-    try {
-      // Ejecutamos la búsqueda en paralelo para todas las cuentas vinculadas
-      const expensesPromises = accounts.map((account) => 
-        getAntExpenses(account.fintoc_id)
-      );
-      
-      const results = await Promise.all(expensesPromises);
-      
-      // "Aplanamos" los resultados: convertimos varios arrays en una sola lista gigante
-      rawExpenses = results.flat();
-      
-    } catch (error) {
-      console.error("Error obteniendo gastos en Home:", error);
+    console.log("📡 [Home] Iniciando obtención de gastos para", accounts.length, "cuentas");
+    
+    // Validar que todas las cuentas tengan fintoc_id
+    const accountsWithFintocId = accounts.filter(acc => acc.fintoc_id);
+    console.log("🔑 [Home] Cuentas con fintoc_id válido:", accountsWithFintocId.length);
+    
+    if (accountsWithFintocId.length === 0) {
+      console.warn("⚠️ [Home] Ninguna cuenta tiene fintoc_id válido. No se pueden obtener gastos.");
+    } else {
+      try {
+        // Ejecutamos la búsqueda en paralelo para todas las cuentas vinculadas
+        console.log("🔄 [Home] Ejecutando getAntExpenses en paralelo...");
+        const expensesPromises = accountsWithFintocId.map((account, index) => {
+          console.log(`📞 [Home] Llamando getAntExpenses [${index + 1}/${accountsWithFintocId.length}] para cuenta:`, account.id);
+          return getAntExpenses(account.fintoc_id);
+        });
+        
+        const results = await Promise.all(expensesPromises);
+        console.log("📊 [Home] Resultados recibidos:", results.map((r, i) => `Cuenta ${i + 1}: ${r.length} gastos`));
+        
+        // "Aplanamos" los resultados: convertimos varios arrays en una sola lista gigante
+        rawExpenses = results.flat();
+        console.log("✅ [Home] Total de gastos raw obtenidos:", rawExpenses.length);
+        
+      } catch (error: any) {
+        console.error("❌ [Home] Error obteniendo gastos:", error);
+        console.error("📋 [Home] Stack trace:", error.stack);
+      }
     }
+  } else {
+    console.warn("⚠️ [Home] No hay cuentas bancarias vinculadas");
   }
 
   // 4. SANITIZAR Y ORDENAR GASTOS
-  const sanitizedExpenses = rawExpenses.map((e: any) => ({
-    ...e,
-    amount: Number(e.amount) || 0,
-    date: e.date ? new Date(e.date) : new Date(),
-    description: e.description || 'Sin descripción'
-  })).sort((a, b) => b.date.getTime() - a.date.getTime()); // Ordenar por fecha desc
+  console.log("🧹 [Home] Sanitizando y ordenando gastos...");
+  const sanitizedExpenses = rawExpenses
+    .map((e: any) => {
+      const amount = typeof e.amount === 'number' ? e.amount : Number(e.amount) || 0;
+      const date = e.date ? new Date(e.date) : new Date();
+      const description = e.description || 'Sin descripción';
+      
+      // Validar que la fecha sea válida
+      if (isNaN(date.getTime())) {
+        console.warn("⚠️ [Home] Fecha inválida para gasto:", e.id, "usando fecha actual");
+        return {
+          ...e,
+          amount,
+          date: new Date(),
+          description
+        };
+      }
+      
+      return {
+        ...e,
+        amount,
+        date,
+        description,
+        antCategory: e.antCategory || "Gasto General"
+      };
+    })
+    .filter((e: any) => {
+      // Filtrar gastos con datos mínimos válidos
+      const isValid = e.id && !isNaN(e.amount) && e.description;
+      if (!isValid) {
+        console.warn("⚠️ [Home] Gastos inválidos filtrados:", e);
+      }
+      return isValid;
+    })
+    .sort((a, b) => b.date.getTime() - a.date.getTime()); // Ordenar por fecha desc
+
+  console.log("✅ [Home] Gastos sanitizados:", sanitizedExpenses.length);
+  if (sanitizedExpenses.length > 0) {
+    console.log("📝 [Home] Primer gasto sanitizado:", {
+      id: sanitizedExpenses[0].id,
+      description: sanitizedExpenses[0].description,
+      amount: sanitizedExpenses[0].amount,
+      date: sanitizedExpenses[0].date.toISOString(),
+      antCategory: sanitizedExpenses[0].antCategory
+    });
+  }
 
   // 5. FILTRO: Transacciones de las últimas 24 horas (Para la lista de "Hoy")
   const oneDayAgo = new Date();
   oneDayAgo.setHours(oneDayAgo.getHours() - 24);
   
   const dailyTransactions = sanitizedExpenses.filter((t: any) => {
-    const tDate = new Date(t.date);
+    const tDate = t.date instanceof Date ? t.date : new Date(t.date);
     return tDate > oneDayAgo;
   });
+
+  console.log("📅 [Home] Transacciones de las últimas 24h:", dailyTransactions.length);
 
   // 6. DATOS DE USUARIO
   const loggedInUser = {
@@ -75,7 +153,24 @@ const Home = async () => {
   };
 
   // Cálculo del ahorro total estimado (15% de todos los gastos históricos)
-  const totalSavings = sanitizedExpenses.reduce((acc, curr) => acc + Math.abs(curr.amount), 0) * 0.15;
+  const totalSavings = sanitizedExpenses.reduce((acc, curr) => {
+    const amount = Math.abs(typeof curr.amount === 'number' ? curr.amount : Number(curr.amount) || 0);
+    return acc + amount;
+  }, 0) * 0.15;
+
+  // Cálculo del saldo total de todas las cuentas
+  const totalCurrentBalance = accounts.reduce((acc, curr) => {
+    const balance = typeof curr.currentBalance === 'number' ? curr.currentBalance : Number(curr.currentBalance) || 0;
+    return acc + balance;
+  }, 0);
+
+  console.log("💰 [Home] Resumen final:", {
+    totalAccounts: accounts.length,
+    totalCurrentBalance,
+    totalExpenses: sanitizedExpenses.length,
+    dailyTransactions: dailyTransactions.length,
+    totalSavings
+  });
 
   return (
     <section className="home no-scrollbar flex w-full flex-row max-xl:flex-col overflow-hidden">

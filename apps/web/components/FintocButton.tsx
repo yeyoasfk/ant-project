@@ -18,7 +18,7 @@ const FintocButton = () => {
     }
   }, []);
 
-  const openFintoc = () => {
+  const openFintoc = async () => {
     const Fintoc = (window as any).Fintoc;
     
     if (!Fintoc) {
@@ -28,48 +28,76 @@ const FintocButton = () => {
 
     setIsLoading(true);
 
-    const widget = Fintoc.create({
-        // ASEGÚRATE QUE ESTA SEA TU LLAVE LIVE REAL (pk_live_...)
+    try {
+      // 1. PRIMERO: Crear Link Intent en el backend para obtener widget_token
+      // Sin esto, el widget NO devuelve exchangeToken en onSuccess
+      console.log("📡 [Fintoc] Creando Link Intent...");
+      const intentRes = await fetch('/api/fintoc/intent', { method: 'POST' });
+      
+      if (!intentRes.ok) {
+        const errData = await intentRes.json().catch(() => ({}));
+        throw new Error(errData.error || `Error al crear Link Intent: ${intentRes.status}`);
+      }
+
+      const intentData = await intentRes.json();
+      const widgetToken = intentData.widget_token ?? intentData.widgetToken;
+      
+      if (!widgetToken) {
+        console.error("❌ [Fintoc] Respuesta del intent:", intentData);
+        throw new Error("No se recibió widget_token del backend");
+      }
+
+      console.log("✅ [Fintoc] Widget token obtenido:", widgetToken.substring(0, 20) + "...");
+
+      // 2. Abrir widget CON el widget_token (flujo Link Intent)
+      const widget = Fintoc.create({
         publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
+        widgetToken: widgetToken, // ← CRÍTICO: Sin esto no hay exchangeToken
         holderType: 'individual',
         product: 'movements',
         country: 'cl',
-        webhookUrl: 'https://tu-app.com/api/webhook', 
         
-        onSuccess: async function(response: any) {
-            console.log("✅ Respuesta completa de Fintoc:", response);
-            
-            // 🚨 VALIDACIÓN DE SEGURIDAD 🚨
-            // Buscamos el exchange_token. A veces viene directo, a veces dentro de un objeto.
-            // Usamos el operador '||' para tener un respaldo si response.id es lo único que hay.
-            const tokenToSend = response.exchange_token || response.id;
+        onSuccess: async function(linkIntent: any) {
+          console.log("✅ [Fintoc] Link Intent completado:", linkIntent);
+          
+          const exchangeToken = linkIntent.exchangeToken ?? linkIntent.exchange_token;
+          
+          if (!exchangeToken) {
+            console.error("❌ [Fintoc] No exchangeToken en linkIntent:", linkIntent);
+            alert("Error: No se recibió el token de intercambio. Intenta nuevamente.");
+            setIsLoading(false);
+            return;
+          }
 
-            console.log("📤 Enviando al Backend:", tokenToSend);
+          console.log("📤 [Fintoc] Enviando exchangeToken al backend...");
 
-            try {
-                await linkBankAccount({
-                    // CORRECCIÓN CLAVE: Enviamos el exchange_token
-                    fintocId: tokenToSend, 
-                    institutionName: response.institution.name,
-                    institutionId: response.institution.id
-                });
+          try {
+            await linkBankAccount({
+              fintocId: exchangeToken, 
+              institutionName: linkIntent.institution?.name || 'Banco',
+              institutionId: linkIntent.institution?.id || ''
+            });
 
-                // Redirigimos
-                window.location.assign('/');
-            } catch(err) {
-                console.error("error guardando en DB", err);
-                alert("Cuenta vinculada en Fintoc pero error al guardar en la app.");
-                setIsLoading(false); // Importante: dejar de cargar si falla
-            }
+            window.location.assign('/');
+          } catch(err: any) {
+            console.error("❌ [Fintoc] Error guardando:", err);
+            alert(err?.message || "Error al vincular la cuenta. Intenta nuevamente.");
+            setIsLoading(false);
+          }
         },
       
         onExit: function() {
-            setIsLoading(false);
-            console.log("Widget cerrado");
+          setIsLoading(false);
+          console.log("Widget cerrado");
         }
-    });
+      });
 
-    widget.open();
+      widget.open();
+    } catch (err: any) {
+      console.error("❌ [Fintoc] Error:", err);
+      alert(err?.message || "Error al conectar con Fintoc. Intenta nuevamente.");
+      setIsLoading(false);
+    }
   }
 
   if (!isMounted) return null;
