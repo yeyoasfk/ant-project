@@ -46,32 +46,32 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
 
       switch (sortConfig.key) {
         case 'name': // Transacción (Alfabético)
-          return sortConfig.direction === 'asc' 
-            ? a.name.localeCompare(b.name) 
+          return sortConfig.direction === 'asc'
+            ? a.name.localeCompare(b.name)
             : b.name.localeCompare(a.name);
-        
+
         case 'amount': // Monto (Numérico)
-          return sortConfig.direction === 'asc' 
-            ? a.amount - b.amount 
+          return sortConfig.direction === 'asc'
+            ? a.amount - b.amount
             : b.amount - a.amount;
-        
+
         case 'date': // Fecha (Cronológico)
-          return sortConfig.direction === 'asc' 
-            ? new Date(a.date).getTime() - new Date(b.date).getTime() 
+          return sortConfig.direction === 'asc'
+            ? new Date(a.date).getTime() - new Date(b.date).getTime()
             : new Date(b.date).getTime() - new Date(a.date).getTime();
 
         case 'status': // Estado (Ciclo Personalizado)
           if (sortConfig.direction === 'success') {
-             // Exitoso primero
-             if (statusA === 'Exitoso' && statusB !== 'Exitoso') return -1;
-             if (statusA !== 'Exitoso' && statusB === 'Exitoso') return 1;
-             return 0;
+            // Exitoso primero
+            if (statusA === 'Exitoso' && statusB !== 'Exitoso') return -1;
+            if (statusA !== 'Exitoso' && statusB === 'Exitoso') return 1;
+            return 0;
           }
           if (sortConfig.direction === 'pending') {
-             // Procesando primero
-             if (statusA === 'Procesando' && statusB !== 'Procesando') return -1;
-             if (statusA !== 'Procesando' && statusB === 'Procesando') return 1;
-             return 0;
+            // Procesando primero
+            if (statusA === 'Procesando' && statusB !== 'Procesando') return -1;
+            if (statusA !== 'Procesando' && statusB === 'Procesando') return 1;
+            return 0;
           }
           return 0;
 
@@ -92,24 +92,24 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
     let direction = 'asc';
 
     if (key === 'status') {
-        // Ciclo especial: Exitoso -> Pendiente -> Normal
-        if (sortConfig.key === 'status' && sortConfig.direction === 'success') {
-            direction = 'pending';
-        } else if (sortConfig.key === 'status' && sortConfig.direction === 'pending') {
-            // Resetear
-            setSortConfig({ key: null, direction: null });
-            return;
-        } else {
-            direction = 'success';
-        }
+      // Ciclo especial: Exitoso -> Pendiente -> Normal
+      if (sortConfig.key === 'status' && sortConfig.direction === 'success') {
+        direction = 'pending';
+      } else if (sortConfig.key === 'status' && sortConfig.direction === 'pending') {
+        // Resetear
+        setSortConfig({ key: null, direction: null });
+        return;
+      } else {
+        direction = 'success';
+      }
     } else if (key === 'category') {
-        // Solo un estado: Frecuencia (podríamos agregar revertir si quisieras)
-        direction = 'frequency';
+      // Solo un estado: Frecuencia (podríamos agregar revertir si quisieras)
+      direction = 'frequency';
     } else {
-        // Toggle estándar (Asc <-> Desc)
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
+      // Toggle estándar (Asc <-> Desc)
+      if (sortConfig.key === key && sortConfig.direction === 'asc') {
+        direction = 'desc';
+      }
     }
 
     setSortConfig({ key, direction });
@@ -117,17 +117,17 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
 
   // Helper para mostrar íconos según el estado
   const renderSortIcon = (columnKey: string) => {
-      if (sortConfig.key !== columnKey) return <ArrowUpDown className="ml-2 h-4 w-4 text-gray-400" />;
-      
-      if (columnKey === 'status') {
-          if (sortConfig.direction === 'success') return <span className="ml-2 text-xs text-green-600 font-bold">(Exitoso)</span>;
-          if (sortConfig.direction === 'pending') return <span className="ml-2 text-xs text-gray-600 font-bold">(Pendiente)</span>;
-      }
-      if (columnKey === 'category') return <Filter className="ml-2 h-4 w-4 text-blue-600" />;
-      
-      return sortConfig.direction === 'asc' 
-        ? <ArrowUp className="ml-2 h-4 w-4 text-blue-600" /> 
-        : <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />;
+    if (sortConfig.key !== columnKey) return <ArrowUpDown className="ml-2 h-4 w-4 text-gray-400" />;
+
+    if (columnKey === 'status') {
+      if (sortConfig.direction === 'success') return <span className="ml-2 text-xs text-green-600 font-bold">(Exitoso)</span>;
+      if (sortConfig.direction === 'pending') return <span className="ml-2 text-xs text-gray-600 font-bold">(Pendiente)</span>;
+    }
+    if (columnKey === 'category') return <Filter className="ml-2 h-4 w-4 text-blue-600" />;
+
+    return sortConfig.direction === 'asc'
+      ? <ArrowUp className="ml-2 h-4 w-4 text-blue-600" />
+      : <ArrowDown className="ml-2 h-4 w-4 text-blue-600" />;
   };
 
   const sortedData = getSortedTransactions();
@@ -140,29 +140,29 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
           <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none group">
             <div className="flex items-center">Transacción {renderSortIcon('name')}</div>
           </th>
-          
+
           {/* Monto */}
           <th onClick={() => handleSort('amount')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none">
             <div className="flex items-center">Monto {renderSortIcon('amount')}</div>
           </th>
-          
+
           {/* Estado */}
           <th onClick={() => handleSort('status')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
             <div className="flex items-center">Estado {renderSortIcon('status')}</div>
           </th>
-          
+
           {/* Fecha */}
           <th onClick={() => handleSort('date')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
             <div className="flex items-center">Fecha {renderSortIcon('date')}</div>
           </th>
-          
+
           {/* Categoría */}
           <th onClick={() => handleSort('category')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
             <div className="flex items-center">Categoría {renderSortIcon('category')}</div>
           </th>
         </tr>
       </thead>
-      
+
       <tbody>
         {sortedData.map((t: any) => {
           const status = getTransactionStatus(new Date(t.date));
@@ -171,14 +171,18 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
 
           return (
             <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-              <td className="max-w-[250px] pl-4 py-4 pr-10">
+              <td className="max-w-[150px] md:max-w-[250px] pl-4 py-4 pr-10"> {/* 👈 Añadimos max-w dinámico */}
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 group-hover:text-blue-900 transition-colors">
-                     {t.name[0]}
+                  <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 transition-colors">
+                    {t.name[0]}
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <h1 className="text-14 truncate font-semibold text-gray-900">{t.name}</h1>
-                    <p className="text-xs text-gray-500 md:hidden">{t.category}</p>
+                  <div className="flex flex-col gap-1 min-w-0"> {/* 👈 min-w-0 es CLAVE para que truncate funcione en flex */}
+                    <h1 className="text-14 font-semibold text-gray-900 truncate"> {/* 👈 truncate añade los "..." */}
+                      {t.name}
+                    </h1>
+                    <p className="text-xs text-gray-500 md:hidden truncate">
+                      {t.category}
+                    </p>
                   </div>
                 </div>
               </td>
@@ -186,11 +190,11 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
                 {isDebit ? '-' : '+'}{formatAmount(t.amount)}
               </td>
               <td className="pl-4 py-4 pr-10 max-md:hidden">
-                <div className={cn("flex items-center gap-2 px-2 py-1 rounded-full w-fit text-xs font-medium border", 
-                    status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
+                <div className={cn("flex items-center gap-2 px-2 py-1 rounded-full w-fit text-xs font-medium border",
+                  status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
                 )}>
-                    <div className={cn("size-2 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-600')} />
-                    {status}
+                  <div className={cn("size-2 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-600')} />
+                  {status}
                 </div>
               </td>
               <td className="pl-4 py-4 pr-10 text-14 text-gray-600 max-md:hidden min-w-[120px]">

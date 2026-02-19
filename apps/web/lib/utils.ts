@@ -19,18 +19,34 @@ export const formatAmount = (amount: number) => {
 };
 
 export const formatDateTime = (dateString: string) => {
+  if (!dateString) return "—";
+  
   const date = new Date(dateString);
   
-  const dateTimeOptions: Intl.DateTimeFormatOptions = {
-    weekday: "short", // Lun
-    month: "short",   // Ene
-    day: "numeric",   // 24
-    hour: "numeric",  // 12
-    minute: "numeric",// 30
-    hour12: true,
+  // 1. Detectamos si la hora es la que forzamos (12:00 UTC) o la del banco (00:00 UTC)
+  const isGenericTime = dateString.includes('T12:00:00') || dateString.includes('T00:00:00');
+
+  // 2. Si la hora no es real, mostramos SOLO la fecha
+  if (isGenericTime) {
+    return date.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  // 3. Si la hora SÍ es real, preparamos las opciones para Fecha + Hora
+  const options: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
   };
 
-  return new Intl.DateTimeFormat("es-CL", dateTimeOptions).format(date);
+  // 4. Retornamos la fecha y hora completa
+  return date.toLocaleString('es-CL', options);
 };
 
 export const getTransactionStatus = (date: Date) => {

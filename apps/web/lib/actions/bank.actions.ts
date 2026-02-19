@@ -6,19 +6,19 @@ import { classifyAntExpense } from '../utils'
 
 // 👇 PEGA TU LLAVE SECRETA AQUÍ ENTRE LAS COMILLAS (La que empieza con sk_live_)
 // Esto es temporal para confirmar que la llave funciona.
-const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY!; 
+const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY!;
 
 /**
  * 1. GUARDAR CUENTA EN SUPABASE
  */
-export async function linkBankAccount({ 
-  fintocId, 
-  institutionName, 
-  institutionId 
-}: { 
-  fintocId: string, 
-  institutionName: string, 
-  institutionId: string 
+export async function linkBankAccount({
+  fintocId,
+  institutionName,
+  institutionId
+}: {
+  fintocId: string,
+  institutionName: string,
+  institutionId: string
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -26,7 +26,7 @@ export async function linkBankAccount({
   if (!user) throw new Error("Usuario no autenticado")
 
   console.log("🔍 [Link] Procesando token recibido del widget");
-  
+
   // 🚨 CORRECCIÓN CRÍTICA: SIEMPRE intercambiar el token.
   // Error Fintoc: "Link access tokens are in the format 'LINK_ID_token_LINK_ACCESS_TOKEN'"
   // El token "link_DQoGNWi2y5eOkdxy" es solo LINK_ID, NO el link_token completo.
@@ -36,7 +36,7 @@ export async function linkBankAccount({
   try {
     console.log("📡 [Exchange] Intercambiando token (obligatorio para API Fintoc)...");
     const exchangeResponse = await fetch(
-      `https://api.fintoc.com/v1/links/exchange?exchange_token=${encodeURIComponent(fintocId)}`, 
+      `https://api.fintoc.com/v1/links/exchange?exchange_token=${encodeURIComponent(fintocId)}`,
       {
         method: 'GET',
         headers: {
@@ -72,7 +72,7 @@ export async function linkBankAccount({
     .from('bank_accounts')
     .insert({
       user_id: user.id,
-      fintoc_id: finalToken, 
+      fintoc_id: finalToken,
       institution_name: institutionName,
       institution_id: institutionId
     })
@@ -123,10 +123,10 @@ export async function getAntExpenses(linkToken: string) {
     // 1. OBTENER TODAS LAS CUENTAS
     const accountsUrl = `https://api.fintoc.com/v1/accounts?link_token=${linkToken}`;
     console.log("📡 [getAntExpenses] Fetching accounts:", accountsUrl);
-    
-    const accountsResponse = await fetch(accountsUrl, { 
-      headers, 
-      next: { revalidate: 0 } 
+
+    const accountsResponse = await fetch(accountsUrl, {
+      headers,
+      next: { revalidate: 0 }
     });
 
     console.log("📊 [getAntExpenses] Accounts response status:", accountsResponse.status);
@@ -169,12 +169,12 @@ export async function getAntExpenses(linkToken: string) {
 
     for (const account of accounts) {
       try {
-        const movementsUrl = `https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}&limit=30`;
+        const movementsUrl = `https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}&limit=100`;
         console.log(`📡 [getAntExpenses] Fetching movements para cuenta ${account.id}`);
-        
-        const moveResponse = await fetch(movementsUrl, { 
-          headers, 
-          next: { revalidate: 0 } 
+
+        const moveResponse = await fetch(movementsUrl, {
+          headers,
+          next: { revalidate: 0 }
         });
 
         console.log(`📊 [getAntExpenses] Movements response status para ${account.id}:`, moveResponse.status);
@@ -190,9 +190,9 @@ export async function getAntExpenses(linkToken: string) {
           console.error(`❌ [getAntExpenses] Error ${moveResponse.status} obteniendo movimientos:`, errorText);
           continue;
         }
-        
+
         const moves = await moveResponse.json();
-        
+
         if (Array.isArray(moves)) {
           console.log(`✅ [getAntExpenses] Movimientos encontrados en cuenta ${account.id}:`, moves.length);
           allMovements = [...allMovements, ...moves];
@@ -207,39 +207,107 @@ export async function getAntExpenses(linkToken: string) {
     console.log(`📊 [getAntExpenses] Total de movimientos encontrados: ${allMovements.length}`);
 
     // 3. MAPEAR Y SANITIZAR DATOS
+   // En bank.actions.ts (dentro del map)
     const mappedExpenses = allMovements.map((mov: any) => {
-      // 🛡️ Validación y mapeo seguro
       const amount = typeof mov.amount === 'number' ? mov.amount : Number(mov.amount) || 0;
       const description = mov.description || mov.name || 'Sin descripción';
-      const date = mov.post_date || mov.transaction_date || mov.date || new Date().toISOString();
       
+      // Usamos el transaction_date directo de Fintoc
+      const date = mov.transaction_date || mov.post_date || new Date().toISOString();
+
       return {
-        id: mov.id || `mov_${Date.now()}_${Math.random()}`,
+        id: mov.id || `mov_${Date.now()}`,
         description,
         amount,
-        date,
+        date, // Enviamos la fecha cruda
         antCategory: classifyAntExpense(description, amount) || "Gasto General",
-        type: mov.type || (amount < 0 ? 'debit' : 'credit'),
-        currency: mov.currency || 'CLP'
+        type: amount < 0 ? 'debit' : 'credit',
       };
     });
 
-    console.log(`✅ [getAntExpenses] Retornando ${mappedExpenses.length} gastos mapeados`);
-    const firstExpense = mappedExpenses[0];
-    if (firstExpense) {
-      console.log("📝 [getAntExpenses] Primer gasto de ejemplo:", {
-        id: firstExpense.id,
-        description: firstExpense.description,
-        amount: firstExpense.amount,
-        date: firstExpense.date
-      });
-    }
+        console.log(`✅ [getAntExpenses] Retornando ${mappedExpenses.length} gastos mapeados`);
+        const firstExpense = mappedExpenses[0];
+        if (firstExpense) {
+          console.log("📝 [getAntExpenses] Primer gasto de ejemplo:", {
+            id: firstExpense.id,
+            description: firstExpense.description,
+            amount: firstExpense.amount,
+            date: firstExpense.date
+          });
+        }
 
     return mappedExpenses;
 
   } catch (error: any) {
     console.error("❌ [getAntExpenses] Error crítico:", error);
     console.error("📋 [getAntExpenses] Stack trace:", error.stack);
+    return [];
+  }
+}
+
+/**
+ * 3. OBTENER DETALLES DE CUENTAS (PARA EL DROPDOWN DEL HISTORIAL)
+ * Consulta Fintoc para obtener el número de cuenta, saldo y tipo real.
+ */
+export async function getDetailedAccounts(dbLinks: any[]) {
+  let allAccounts: any[] = [];
+  const headers = { 'Authorization': process.env.FINTOC_SECRET_KEY!, 'Content-Type': 'application/json' };
+
+  for (const link of dbLinks) {
+    try {
+      const res = await fetch(`https://api.fintoc.com/v1/accounts?link_token=${link.fintoc_id}`, { headers, next: { revalidate: 0 } });
+      if (!res.ok) continue;
+      
+      const fintocAccounts = await res.json();
+      
+      fintocAccounts.forEach((acc: any) => {
+        // 🧠 EL TRUCO: Fintoc siempre envía la institución real dentro de 'acc'.
+        // Si por alguna razón falla, usamos el de la DB como plan B.
+        const realBankName = acc.institution?.name || link.institution_name || 'Banco';
+
+        allAccounts.push({
+          fintocAccountId: acc.id,
+          linkToken: link.fintoc_id,
+          institutionName: realBankName, // 👈 Ahora usamos el nombre 100% real (Ej: "Banco Santander")
+          name: acc.name,
+          number: acc.number || '0000',
+          type: acc.type,
+          currentBalance: acc.balance?.current || 0,
+        });
+      });
+    } catch (e) {
+      console.error("Error obteniendo detalles de cuenta:", e);
+    }
+  }
+  return allAccounts;
+}
+/**
+ * 4. OBTENER MOVIMIENTOS DE UNA SOLA CUENTA ESPECÍFICA
+ */
+export async function getAccountMovements(linkToken: string, accountId: string) {
+  const headers = { 'Authorization': process.env.FINTOC_SECRET_KEY!, 'Content-Type': 'application/json' };
+  try {
+    const res = await fetch(`https://api.fintoc.com/v1/accounts/${accountId}/movements?link_token=${linkToken}&limit=100`, { headers, next: { revalidate: 0 } });
+    if (!res.ok) return [];
+    
+    const moves = await res.json();
+    if (!Array.isArray(moves)) return [];
+
+    return moves.map((mov: any) => {
+      const amount = typeof mov.amount === 'number' ? mov.amount : Number(mov.amount) || 0;
+      const description = mov.description || mov.name || 'Sin descripción';
+      
+      return {
+        id: mov.id || `mov_${Date.now()}_${Math.random()}`,
+        description,
+        amount,
+        date: mov.transaction_date || mov.post_date || new Date().toISOString(),
+        antCategory: classifyAntExpense(description, amount) || "Gasto General",
+        type: amount < 0 ? 'debit' : 'credit',
+      };
+    });
+  } catch (error) {
+    console.error("Error obteniendo movimientos individuales:", error);
     return [];
   }
 }

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 const Home = async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) redirect('/sign-in');
 
   // 1. OBTENER CUENTAS (Desde Supabase)
@@ -33,8 +33,8 @@ const Home = async () => {
   const accounts = rawAccounts?.map((acc) => {
     const sanitized = {
       ...acc,
-      currentBalance: typeof acc.currentBalance === 'number' ? acc.currentBalance : Number(acc.currentBalance) || 0, 
-      mask: acc.mask || '****', 
+      currentBalance: typeof acc.currentBalance === 'number' ? acc.currentBalance : Number(acc.currentBalance) || 0,
+      mask: acc.mask || '****',
       officialName: acc.institution_name || acc.officialName || 'Banco',
       fintoc_id: acc.fintoc_id || acc.fintoc_link_id || null
     };
@@ -51,14 +51,14 @@ const Home = async () => {
 
   // 3. OBTENER GASTOS DE TODAS LAS CUENTAS (CORRECCIÓN CRÍTICA)
   let rawExpenses: any[] = [];
-  
+
   if (accounts.length > 0) {
     console.log("📡 [Home] Iniciando obtención de gastos para", accounts.length, "cuentas");
-    
+
     // Validar que todas las cuentas tengan fintoc_id
     const accountsWithFintocId = accounts.filter(acc => acc.fintoc_id);
     console.log("🔑 [Home] Cuentas con fintoc_id válido:", accountsWithFintocId.length);
-    
+
     if (accountsWithFintocId.length === 0) {
       console.warn("⚠️ [Home] Ninguna cuenta tiene fintoc_id válido. No se pueden obtener gastos.");
     } else {
@@ -69,14 +69,14 @@ const Home = async () => {
           console.log(`📞 [Home] Llamando getAntExpenses [${index + 1}/${accountsWithFintocId.length}] para cuenta:`, account.id);
           return getAntExpenses(account.fintoc_id);
         });
-        
+
         const results = await Promise.all(expensesPromises);
         console.log("📊 [Home] Resultados recibidos:", results.map((r, i) => `Cuenta ${i + 1}: ${r.length} gastos`));
-        
+
         // "Aplanamos" los resultados: convertimos varios arrays en una sola lista gigante
         rawExpenses = results.flat();
         console.log("✅ [Home] Total de gastos raw obtenidos:", rawExpenses.length);
-        
+
       } catch (error: any) {
         console.error("❌ [Home] Error obteniendo gastos:", error);
         console.error("📋 [Home] Stack trace:", error.stack);
@@ -93,7 +93,7 @@ const Home = async () => {
       const amount = typeof e.amount === 'number' ? e.amount : Number(e.amount) || 0;
       const date = e.date ? new Date(e.date) : new Date();
       const description = e.description || 'Sin descripción';
-      
+
       // Validar que la fecha sea válida
       if (isNaN(date.getTime())) {
         console.warn("⚠️ [Home] Fecha inválida para gasto:", e.id, "usando fecha actual");
@@ -104,7 +104,7 @@ const Home = async () => {
           description
         };
       }
-      
+
       return {
         ...e,
         amount,
@@ -134,16 +134,16 @@ const Home = async () => {
     });
   }
 
-  // 5. FILTRO: Transacciones de las últimas 24 horas (Para la lista de "Hoy")
-  const oneDayAgo = new Date();
-  oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-  
-  const dailyTransactions = sanitizedExpenses.filter((t: any) => {
+  // 5. FILTRO: Transacciones del MES ACTUAL
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const monthlyTransactions = sanitizedExpenses.filter((t: any) => {
     const tDate = t.date instanceof Date ? t.date : new Date(t.date);
-    return tDate > oneDayAgo;
+    return tDate >= firstDayOfMonth;
   });
 
-  console.log("📅 [Home] Transacciones de las últimas 24h:", dailyTransactions.length);
+  console.log("📅 [Home] Transacciones del mes:", monthlyTransactions.length);
 
   // 6. DATOS DE USUARIO
   const loggedInUser = {
@@ -168,17 +168,17 @@ const Home = async () => {
     totalAccounts: accounts.length,
     totalCurrentBalance,
     totalExpenses: sanitizedExpenses.length,
-    dailyTransactions: dailyTransactions.length,
+    monthlyTransactions: monthlyTransactions.length,
     totalSavings
   });
 
   return (
     <section className="home no-scrollbar flex w-full flex-row max-xl:flex-col overflow-hidden">
-      
+
       {/* --- COLUMNA IZQUIERDA --- */}
       <div className="no-scrollbar flex w-full flex-1 flex-col gap-8 px-5 py-7 lg:px-8 xl:overflow-y-auto">
         <header className="home-header">
-          <HeaderBox 
+          <HeaderBox
             type="greeting"
             title="Bienvenido"
             user={loggedInUser.firstName}
@@ -188,7 +188,7 @@ const Home = async () => {
 
         {/* FILA SUPERIOR: GRÁFICO Y RESUMEN */}
         <div className="flex flex-col gap-6 xl:flex-row w-full">
-          
+
           {/* Gráfico (Muestra historial completo) */}
           <div className="flex-1 w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm min-h-[300px]">
             {sanitizedExpenses.length > 0 ? (
@@ -204,7 +204,7 @@ const Home = async () => {
               </div>
             )}
           </div>
-          
+
           {/* Tarjeta de Ahorro */}
           <div className="flex w-full flex-col justify-center rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm xl:w-[300px]">
             <div className="flex flex-col gap-2">
@@ -227,9 +227,9 @@ const Home = async () => {
         {/* FILA INFERIOR: TRANSACCIONES DE HOY */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-18 font-bold text-gray-900">Transacciones de Hoy</h2>
-            <Link 
-              href="/transaction-history" 
+            <h2 className="text-18 font-bold text-gray-900">Movimientos del Mes</h2>
+            <Link
+              href="/transaction-history"
               className="text-14 font-semibold text-blue-600 hover:underline"
             >
               Ver todas ({sanitizedExpenses.length})
@@ -237,8 +237,8 @@ const Home = async () => {
           </div>
 
           <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-6 shadow-sm min-h-[100px]">
-            {dailyTransactions.length > 0 ? (
-              dailyTransactions.map((t: any) => (
+            {monthlyTransactions.length > 0 ? (
+              monthlyTransactions.slice(0, 4).map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                   <div className="flex items-center gap-3">
                     <div className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold uppercase">
@@ -256,7 +256,7 @@ const Home = async () => {
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-gray-500">
-                <p>No hay movimientos en las últimas 24 hrs 🍃</p>
+                <p>No hay movimientos este mes 🍃</p>
                 {/* Ayuda visual: Si hay gastos históricos pero no hoy */}
                 {sanitizedExpenses.length > 0 && (
                   <p className="text-xs text-blue-500 mt-2">
@@ -270,10 +270,10 @@ const Home = async () => {
       </div>
 
       {/* --- COLUMNA DERECHA --- */}
-      <RightSidebar 
+      <RightSidebar
         user={loggedInUser}
         transactions={sanitizedExpenses} // Pasamos TODO el historial, no solo lo de hoy
-        banks={accounts.slice(0, 2)} 
+        banks={accounts.slice(0, 2)}
       />
     </section>
   );
