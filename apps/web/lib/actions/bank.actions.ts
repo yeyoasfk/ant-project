@@ -4,6 +4,24 @@ import { createClient } from '../supabase/server'
 import { revalidatePath } from 'next/cache'
 import { classifyAntExpense } from '../utils'
 
+// 🏦 DICCIONARIO DE BANCOS CHILENOS (Equivalente a la tabla 'banks' de Fintoc)
+const CHILEAN_BANKS: Record<string, string> = {
+  'cl_banco_estado': 'Banco Estado',
+  'cl_banco_bci': 'Banco BCI',
+  'cl_banco_de_chile': 'Banco de Chile',
+  'cl_banco_santander': 'Banco Santander',
+  'cl_banco_itau': 'Banco Itaú',
+  'cl_banco_scotiabank': 'Scotiabank',
+  'cl_banco_falabella': 'Banco Falabella',
+  'cl_banco_security': 'Banco Security',
+  'cl_banco_bice': 'Banco BICE',
+  'cl_banco_consorcio': 'Banco Consorcio',
+  'cl_banco_ripley': 'Banco Ripley',
+  'cl_mercado_pago': 'Mercado Pago',
+  'cl_mach': 'Mach',
+  'cl_tenpo': 'Tenpo'
+};
+
 // 👇 PEGA TU LLAVE SECRETA AQUÍ ENTRE LAS COMILLAS (La que empieza con sk_live_)
 // Esto es temporal para confirmar que la llave funciona.
 const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY!;
@@ -33,8 +51,11 @@ export async function linkBankAccount({
   // Debemos SIEMPRE llamar al exchange para obtener el token en formato correcto.
   let finalToken: string;
 
+  let backendInstitutionName = institutionName; // Plan B
+  let backendInstitutionId = institutionId;     // Plan B
+
   try {
-    console.log("📡 [Exchange] Intercambiando token (obligatorio para API Fintoc)...");
+    console.log("📡 [Exchange] Intercambiando token...");
     const exchangeResponse = await fetch(
       `https://api.fintoc.com/v1/links/exchange?exchange_token=${encodeURIComponent(fintocId)}`,
       {
@@ -49,32 +70,34 @@ export async function linkBankAccount({
     if (exchangeResponse.ok) {
       const data = await exchangeResponse.json();
       finalToken = data.link_token;
+      
+      // 🧠 EL GOLPE MAESTRO: Sacamos el nombre EXACTO y OFICIAL desde la API de Fintoc.
+      // El servidor de Fintoc nunca miente y siempre manda el objeto 'institution'.
+      if (data.institution) {
+        backendInstitutionName = data.institution.name;
+        backendInstitutionId = data.institution.id;
+        console.log(`🏦 [Exchange] Banco capturado desde el servidor: ${backendInstitutionName} (${backendInstitutionId})`);
+      }
+
       if (!finalToken) {
-        console.error("❌ [Exchange] La respuesta no contiene link_token:", data);
         throw new Error("Fintoc no devolvió link_token válido");
       }
-      if (!finalToken.includes('_token_')) {
-        console.warn("⚠️ [Exchange] link_token podría tener formato incorrecto. Esperado: LINK_ID_token_LINK_ACCESS_TOKEN");
-      }
-      console.log("✅ [Exchange] Token intercambiado. Formato correcto:", finalToken.substring(0, 40) + "...");
     } else {
-      const errorText = await exchangeResponse.text();
-      console.error(`❌ [Exchange] Falló (${exchangeResponse.status}):`, errorText);
-      throw new Error(`Error al intercambiar token con Fintoc: ${exchangeResponse.status}`);
+      throw new Error(`Error al intercambiar token: ${exchangeResponse.status}`);
     }
   } catch (err: any) {
     console.error("❌ [Exchange] Error:", err);
     throw err;
   }
 
-  // Guardamos en Supabase
+  // Guardamos en Supabase usando los nombres oficiales del servidor
   const { error } = await supabase
     .from('bank_accounts')
     .insert({
       user_id: user.id,
       fintoc_id: finalToken,
-      institution_name: institutionName,
-      institution_id: institutionId
+      institution_name: backendInstitutionName, // 👈 Ahora se guarda "Banco Santander" 100% seguro
+      institution_id: backendInstitutionId      // 👈 Ahora se guarda "cl_banco_santander"
     })
 
   if (error) {
@@ -261,14 +284,15 @@ export async function getDetailedAccounts(dbLinks: any[]) {
       const fintocAccounts = await res.json();
       
       fintocAccounts.forEach((acc: any) => {
-        // 🧠 EL TRUCO: Fintoc siempre envía la institución real dentro de 'acc'.
-        // Si por alguna razón falla, usamos el de la DB como plan B.
-        const realBankName = acc.institution?.name || link.institution_name || 'Banco';
+        // 🧠 LA TRADUCCIÓN EXACTA DE FINTOC:
+        // Buscamos el ID (ej: cl_banco_santander) en nuestro diccionario.
+        // Si no lo encuentra, usa el nombre que venía de la DB.
+        const officialBankName = CHILEAN_BANKS[link.institution_id] || link.institution_name || 'Banco Desconocido';
 
         allAccounts.push({
           fintocAccountId: acc.id,
           linkToken: link.fintoc_id,
-          institutionName: realBankName, // 👈 Ahora usamos el nombre 100% real (Ej: "Banco Santander")
+          institutionName: officialBankName, // 👈 Ahora siempre dirá "Banco Santander", "Banco Estado", etc.
           name: acc.name,
           number: acc.number || '0000',
           type: acc.type,

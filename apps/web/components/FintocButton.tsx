@@ -58,7 +58,7 @@ const FintocButton = () => {
         country: 'cl',
         
         onSuccess: async function(linkIntent: any) {
-          console.log("✅ [Fintoc] Link Intent completado:", linkIntent);
+          console.log("✅ [Fintoc] Payload completo recibido:", linkIntent);
           
           const exchangeToken = linkIntent.exchangeToken ?? linkIntent.exchange_token;
           
@@ -69,16 +69,22 @@ const FintocButton = () => {
             return;
           }
 
-          console.log("📤 [Fintoc] Enviando exchangeToken al backend...");
+          // 🧠 EXTRACCIÓN INTELIGENTE: Buscamos la institución en la raíz o dentro de 'link'
+          const institutionData = linkIntent.institution || linkIntent.link?.institution || {};
+          const nombreReal = institutionData.name || 'Banco Desconocido';
+          const idReal = institutionData.id || 'id_desconocido';
+
+          console.log("🏦 [Fintoc] Banco detectado:", nombreReal, idReal);
+          console.log("📤 [Fintoc] Enviando datos al backend...");
 
           try {
             await linkBankAccount({
               fintocId: exchangeToken, 
-              institutionName: linkIntent.institution?.name || 'Banco',
-              institutionId: linkIntent.institution?.id || ''
+              institutionName: nombreReal, // 👈 Ahora viajará "Banco Santander"
+              institutionId: idReal        // 👈 Ahora viajará "cl_banco_santander"
             });
 
-            window.location.assign('/');
+            window.location.assign('/transaction-history');
           } catch(err: any) {
             console.error("❌ [Fintoc] Error guardando:", err);
             alert(err?.message || "Error al vincular la cuenta. Intenta nuevamente.");
