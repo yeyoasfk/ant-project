@@ -13,8 +13,8 @@ export default function MiniBankDropdown({ accounts, currentAccountId }: { accou
   const last4 = currentAccount.number?.slice(-4) || '****';
 
   return (
-    <div className="bg-blue-600 text-white rounded-xl p-3 md:px-5 md:py-3 flex flex-col md:flex-row justify-between items-start md:items-center shadow-md gap-3 w-full">
-      
+    <div className="bg-gradient-to-r from-[#3b174d] via-[#572371] to-[#653584] text-white rounded-xl p-3 md:px-5 md:py-3 flex flex-col md:flex-row justify-between items-start md:items-center shadow-creditCard border border-white/10 gap-3 w-full">
+
       <div className="flex flex-col w-full md:w-auto">
         <div className="relative inline-block w-full md:w-max">
           <select
@@ -32,7 +32,7 @@ export default function MiniBankDropdown({ accounts, currentAccountId }: { accou
             <ChevronDown className="size-4" />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 mt-0.5">
           <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider">
             {currentAccount.type === 'checking_account' ? 'Cta. Corriente' : 'Cta. Vista'}
@@ -40,7 +40,7 @@ export default function MiniBankDropdown({ accounts, currentAccountId }: { accou
           <span className="text-blue-100 text-12 font-medium">**** {last4}</span>
         </div>
       </div>
-      
+
       {/* Saldo a la derecha */}
       <div className="flex flex-col items-start md:items-end bg-black/15 px-4 py-1.5 rounded-lg border border-white/10 w-full md:w-auto">
         <p className="text-[11px] text-blue-100 uppercase tracking-widest font-semibold">Saldo Actual</p>

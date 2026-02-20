@@ -5,17 +5,18 @@ import { formatAmount, formatDateTime, getTransactionStatus, cn } from '../lib/u
 import { ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
 
 const CategoryBadge = ({ category }: { category: string }) => {
+  // Dark-theme badge colours
   const styles: { [key: string]: string } = {
-    'Comida': 'bg-pink-100 text-pink-700 border-pink-200',
-    'Transporte': 'bg-blue-100 text-blue-700 border-blue-200',
-    'Ingreso': 'bg-green-100 text-green-700 border-green-200',
-    'Suscripciones': 'bg-purple-100 text-purple-700 border-purple-200',
-    'default': 'bg-gray-100 text-gray-700 border-gray-200',
+    'Comida': 'bg-pink-900/50 text-pink-300 border-pink-700/50',
+    'Transporte': 'bg-blue-900/50 text-blue-300 border-blue-700/50',
+    'Ingreso': 'bg-green-900/50 text-green-300 border-green-700/50',
+    'Suscripciones': 'bg-purple-900/50 text-purple-300 border-purple-700/50',
+    'default': 'bg-white/5 text-gray-400 border-white/10',
   }
 
   return (
     <div className={cn("flex items-center justify-center gap-1 rounded-2xl border-[1.5px] px-3 py-0.5 w-fit", styles[category] || styles.default)}>
-      <div className={cn("size-2 rounded-full", category === 'Ingreso' ? 'bg-green-600' : 'bg-current')} />
+      <div className={cn("size-2 rounded-full", category === 'Ingreso' ? 'bg-green-400' : 'bg-current')} />
       <p className="text-[12px] font-medium">{category}</p>
     </div>
   )
@@ -96,15 +97,15 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
   };
 
   const renderSortIcon = (columnKey: string) => {
-    if (sortConfig.key !== columnKey) return <ArrowUpDown className="ml-1 h-3.5 w-3.5 text-gray-400" />;
+    if (sortConfig.key !== columnKey) return <ArrowUpDown className="ml-1 h-3.5 w-3.5 text-gray-500" />;
     if (columnKey === 'status') {
-      if (sortConfig.direction === 'success') return <span className="ml-1 text-xs text-green-600 font-bold">(Exitoso)</span>;
-      if (sortConfig.direction === 'pending') return <span className="ml-1 text-xs text-gray-600 font-bold">(Pend.)</span>;
+      if (sortConfig.direction === 'success') return <span className="ml-1 text-xs text-green-400 font-bold">(Exitoso)</span>;
+      if (sortConfig.direction === 'pending') return <span className="ml-1 text-xs text-gray-400 font-bold">(Pend.)</span>;
     }
-    if (columnKey === 'category') return <Filter className="ml-1 h-3.5 w-3.5 text-blue-600" />;
+    if (columnKey === 'category') return <Filter className="ml-1 h-3.5 w-3.5 text-[#9d6dc0]" />;
     return sortConfig.direction === 'asc'
-      ? <ArrowUp className="ml-1 h-3.5 w-3.5 text-blue-600" />
-      : <ArrowDown className="ml-1 h-3.5 w-3.5 text-blue-600" />;
+      ? <ArrowUp className="ml-1 h-3.5 w-3.5 text-[#9d6dc0]" />
+      : <ArrowDown className="ml-1 h-3.5 w-3.5 text-[#9d6dc0]" />;
   };
 
   const sortedData = getSortedTransactions();
@@ -113,38 +114,40 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
     <div className="w-full">
 
       {/* ── MOBILE: Card list (< md) ─────────────────────────────────── */}
-      <div className="flex flex-col divide-y divide-gray-100 md:hidden">
+      <div className="flex flex-col divide-y divide-white/5 md:hidden">
         {sortedData.map((t: any) => {
           const status = getTransactionStatus(new Date(t.date));
           const isDebit = t.type === 'debit';
           const isIncome = t.category === 'Ingreso';
 
           return (
-            <div key={t.id} className="flex items-center gap-3 px-1 py-3.5 hover:bg-gray-50 transition-colors">
+            <div key={t.id} className="flex items-center gap-3 px-1 py-3.5 hover:bg-white/5 transition-colors">
               {/* Avatar */}
-              <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold text-sm">
+              <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-[#3b174d]/80 border border-[#572371]/40 text-[#9d6dc0] font-bold text-sm">
                 {t.name[0]}
               </div>
 
               {/* Info center */}
               <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{t.name}</p>
+                <p className="text-sm font-semibold text-gray-100 truncate">{t.name}</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-400">{formatDateTime(t.date)}</span>
+                  <span className="text-xs text-gray-500">{formatDateTime(t.date)}</span>
                   <CategoryBadge category={t.category} />
                 </div>
               </div>
 
               {/* Amount + Status */}
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className={cn("text-sm font-bold whitespace-nowrap", isDebit || !isIncome ? 'text-red-600' : 'text-green-600')}>
+                <span className={cn("text-sm font-bold whitespace-nowrap", isDebit || !isIncome ? 'text-red-400' : 'text-green-400')}>
                   {isDebit ? '-' : '+'}{formatAmount(t.amount)}
                 </span>
                 <div className={cn(
                   "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border whitespace-nowrap",
-                  status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'
+                  status === 'Exitoso'
+                    ? 'bg-green-900/40 text-green-400 border-green-700/40'
+                    : 'bg-white/5 text-gray-400 border-white/10'
                 )}>
-                  <div className={cn("size-1.5 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-400')} />
+                  <div className={cn("size-1.5 rounded-full", status === 'Exitoso' ? 'bg-green-400' : 'bg-gray-500')} />
                   {status}
                 </div>
               </div>
@@ -156,21 +159,21 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
       {/* ── DESKTOP: Classic table (md+) ─────────────────────────────── */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse min-w-full">
-          <thead className="bg-gray-50 sticky top-0">
+          <thead className="bg-[#2d183b]/60 backdrop-blur-sm sticky top-0">
             <tr>
-              <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-sm font-semibold text-gray-400 cursor-pointer hover:text-white hover:bg-white/5 transition-colors select-none whitespace-nowrap">
                 <div className="flex items-center">Transacción {renderSortIcon('name')}</div>
               </th>
-              <th onClick={() => handleSort('amount')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <th onClick={() => handleSort('amount')} className="px-4 py-3 text-left text-sm font-semibold text-gray-400 cursor-pointer hover:text-white hover:bg-white/5 transition-colors select-none whitespace-nowrap">
                 <div className="flex items-center">Monto {renderSortIcon('amount')}</div>
               </th>
-              <th onClick={() => handleSort('status')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <th onClick={() => handleSort('status')} className="px-4 py-3 text-left text-sm font-semibold text-gray-400 cursor-pointer hover:text-white hover:bg-white/5 transition-colors select-none whitespace-nowrap">
                 <div className="flex items-center">Estado {renderSortIcon('status')}</div>
               </th>
-              <th onClick={() => handleSort('date')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <th onClick={() => handleSort('date')} className="px-4 py-3 text-left text-sm font-semibold text-gray-400 cursor-pointer hover:text-white hover:bg-white/5 transition-colors select-none whitespace-nowrap">
                 <div className="flex items-center">Fecha {renderSortIcon('date')}</div>
               </th>
-              <th onClick={() => handleSort('category')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <th onClick={() => handleSort('category')} className="px-4 py-3 text-left text-sm font-semibold text-gray-400 cursor-pointer hover:text-white hover:bg-white/5 transition-colors select-none whitespace-nowrap">
                 <div className="flex items-center">Categoría {renderSortIcon('category')}</div>
               </th>
             </tr>
@@ -183,27 +186,29 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
               const isIncome = t.category === 'Ingreso';
 
               return (
-                <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
+                <tr key={t.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                   <td className="max-w-xs pl-4 py-4 pr-10">
                     <div className="flex items-center gap-3">
-                      <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 transition-colors text-sm">
+                      <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-[#3b174d]/80 border border-[#572371]/40 text-[#9d6dc0] font-bold group-hover:border-[#572371] transition-colors text-sm">
                         {t.name[0]}
                       </div>
-                      <h1 className="text-14 font-semibold text-gray-900 truncate">{t.name}</h1>
+                      <h1 className="text-14 font-semibold text-gray-100 truncate">{t.name}</h1>
                     </div>
                   </td>
-                  <td className={cn("pl-4 py-4 pr-10 font-semibold text-14 whitespace-nowrap", isDebit || !isIncome ? 'text-red-600' : 'text-green-600')}>
+                  <td className={cn("pl-4 py-4 pr-10 font-semibold text-14 whitespace-nowrap", isDebit || !isIncome ? 'text-red-400' : 'text-green-400')}>
                     {isDebit ? '-' : '+'}{formatAmount(t.amount)}
                   </td>
                   <td className="pl-4 py-4 pr-10">
                     <div className={cn("flex items-center gap-2 px-2 py-1 rounded-full w-fit text-xs font-medium border whitespace-nowrap",
-                      status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
+                      status === 'Exitoso'
+                        ? 'bg-green-900/40 text-green-400 border-green-700/40'
+                        : 'bg-white/5 text-gray-400 border-white/10'
                     )}>
-                      <div className={cn("size-2 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-600')} />
+                      <div className={cn("size-2 rounded-full", status === 'Exitoso' ? 'bg-green-400' : 'bg-gray-500')} />
                       {status}
                     </div>
                   </td>
-                  <td className="pl-4 py-4 pr-10 text-14 text-gray-600 min-w-max">
+                  <td className="pl-4 py-4 pr-10 text-14 text-gray-400 min-w-max">
                     {formatDateTime(t.date)}
                   </td>
                   <td className="pl-4 py-4 pr-10">

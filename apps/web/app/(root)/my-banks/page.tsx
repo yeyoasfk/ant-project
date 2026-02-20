@@ -19,8 +19,8 @@ const MyBanks = async () => {
 
   if (!dbLinks || dbLinks.length === 0) {
     return (
-      <section className="flex w-full flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
-        <HeaderBox 
+      <section className="flex w-full flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
+        <HeaderBox
           title="Mis Cuentas Bancarias"
           subtext="No tienes cuentas vinculadas aún. Ve al Inicio para vincular una."
         />
@@ -37,11 +37,11 @@ const MyBanks = async () => {
     rawAccounts.map(async (acc) => {
       // Obtenemos todos los movimientos de esta cuenta específica
       const movements = await getAccountMovements(acc.linkToken, acc.fintocAccountId);
-      
+
       // Filtramos solo los GASTOS (débitos) del MES ACTUAL
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
-      
+
       const monthlyExpenses = movements.filter((mov: any) => {
         const movDate = new Date(mov.date);
         return (
@@ -62,26 +62,26 @@ const MyBanks = async () => {
   );
 
   return (
-    <section className="flex w-full flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
+    <section className="flex w-full flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
       <div className="flex flex-col gap-2">
-        <HeaderBox 
+        <HeaderBox
           title="Mis Cuentas Bancarias"
           subtext="Gestiona tus actividades bancarias y monitorea tu gasto mensual."
         />
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-18 font-bold text-gray-900">Tus Tarjetas Activas</h2>
-        
+        <h2 className="text-18 font-bold text-white">Tus Tarjetas Activas</h2>
+
         <div className="flex flex-wrap gap-6">
           {accountsWithSpent.map((account, index) => (
             <div key={account.fintocAccountId} className="flex flex-col gap-2">
-                <BankCard 
-                  account={account}
-                  userName={`${firstName} ${lastName}`.trim()}
-                  showBalance={true}
-                  color={index % 2 === 0 ? 'blue' : 'purple'} 
-                />
+              <BankCard
+                account={account}
+                userName={`${firstName} ${lastName}`.trim()}
+                showBalance={true}
+                color={index % 2 === 0 ? 'blue' : 'purple'}
+              />
             </div>
           ))}
         </div>

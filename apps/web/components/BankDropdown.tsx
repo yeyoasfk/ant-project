@@ -23,7 +23,7 @@ export default function BankDropdown({ accounts, currentAccountId }: { accounts:
   const last4 = currentAccount?.number?.slice(-4) || '****';
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl p-4 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center shadow-md gap-4 md:gap-6 relative">
+    <div className="bg-gradient-to-r from-[#3b174d] via-[#572371] to-[#653584] text-white rounded-2xl p-4 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center shadow-creditCard gap-4 md:gap-6 relative border border-white/10">
 
       <div className="flex flex-col gap-2 md:gap-3 w-full md:w-auto">
 
@@ -32,7 +32,7 @@ export default function BankDropdown({ accounts, currentAccountId }: { accounts:
           <select
             value={currentAccountId}
             onChange={(e) => router.push(`/transaction-history?id=${e.target.value}`)}
-            className="w-full appearance-none bg-white/10 hover:bg-white/20 border border-white/20 text-white text-base md:text-2xl font-bold rounded-xl px-3 py-2 pr-10 cursor-pointer outline-none transition-colors backdrop-blur-sm truncate"
+            className="w-full appearance-none bg-black/20 hover:bg-black/30 border border-white/20 text-white text-base md:text-2xl font-bold rounded-xl px-3 py-2 pr-10 cursor-pointer outline-none transition-colors backdrop-blur-sm truncate"
           >
             {accounts.map(acc => (
               <option key={acc.fintocAccountId} value={acc.fintocAccountId} className="text-gray-900 text-base font-medium">
@@ -52,15 +52,15 @@ export default function BankDropdown({ accounts, currentAccountId }: { accounts:
           <span className="bg-white/20 px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wider uppercase">
             {translateType(currentAccount.type)}
           </span>
-          <span className="text-blue-100 text-sm font-medium tracking-widest">
+          <span className="text-white/70 text-sm font-medium tracking-widest">
             **** {last4}
           </span>
         </div>
       </div>
 
       {/* SALDO ACTUAL */}
-      <div className="flex flex-row md:flex-col items-center md:items-end justify-between bg-black/10 px-4 py-3 rounded-xl border border-white/10 w-full md:w-auto shrink-0 gap-4 md:gap-1">
-        <p className="text-sm text-blue-100 font-medium">Saldo Actual</p>
+      <div className="flex flex-row md:flex-col items-center md:items-end justify-between bg-black/20 px-4 py-3 rounded-xl border border-white/10 w-full md:w-auto shrink-0 gap-4 md:gap-1">
+        <p className="text-sm text-white/60 font-medium">Saldo Actual</p>
         <p className="text-2xl md:text-3xl font-bold tracking-tight">
           {formatAmount(currentAccount.currentBalance)}
         </p>

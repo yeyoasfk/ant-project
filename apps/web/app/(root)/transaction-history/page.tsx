@@ -23,7 +23,7 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
 
   if (!dbLinks || dbLinks.length === 0) {
     return (
-      <div className="flex flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
+      <div className="flex flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
         <HeaderBox title="Historial de Transacciones" subtext="No tienes cuentas vinculadas aún." />
       </div>
     );
@@ -33,7 +33,7 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
   const allAccounts = await getDetailedAccounts(dbLinks);
 
   // 4. Determinamos qué cuenta está seleccionada (la de la URL o la primera por defecto)
-  const currentAccount = urlAccountId 
+  const currentAccount = urlAccountId
     ? allAccounts.find(a => a.fintocAccountId === urlAccountId) || allAccounts[0]
     : allAccounts[0];
 
@@ -41,22 +41,22 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
   let filteredTransactions: any[] = [];
   if (currentAccount) {
     const rawTransactions = await getAccountMovements(currentAccount.linkToken, currentAccount.fintocAccountId);
-    
+
     // Mapeamos para la tabla
     filteredTransactions = rawTransactions.map((t: any) => ({
       id: t.id,
       accountId: currentAccount.fintocAccountId,
       name: t.description,
-      amount: Math.abs(t.amount), 
+      amount: Math.abs(t.amount),
       date: t.date,
       category: t.antCategory,
-      type: t.type 
+      type: t.type
     }));
   }
 
   return (
-    <div className="flex flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
-      <HeaderBox 
+    <div className="flex flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
+      <HeaderBox
         title="Historial de Transacciones"
         subtext="Consulta tus ingresos y gastos por cuenta."
       />
@@ -64,22 +64,22 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
       <div className="space-y-8">
         {/* BANNER DESPLEGABLE DINÁMICO */}
         {allAccounts.length > 0 && (
-          <BankDropdown 
-            accounts={allAccounts} 
-            currentAccountId={currentAccount.fintocAccountId} 
+          <BankDropdown
+            accounts={allAccounts}
+            currentAccountId={currentAccount.fintocAccountId}
           />
         )}
 
         {/* TABLA DE TRANSACCIONES */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-4 shadow-2xl">
           <div className="mb-4 flex items-center justify-between px-2">
-            <h2 className="text-18 font-bold text-gray-900">Movimientos de la cuenta</h2>
+            <h2 className="text-18 font-bold text-white">Movimientos de la cuenta</h2>
           </div>
-          
+
           {filteredTransactions.length > 0 ? (
             <TransactionsTable transactions={filteredTransactions} />
           ) : (
-            <div className="py-10 text-center text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+            <div className="py-10 text-center text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
               No hay movimientos recientes en esta cuenta.
             </div>
           )}

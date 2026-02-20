@@ -21,7 +21,7 @@ const AnalisisPage = async ({ searchParams }: { searchParams: Promise<{ id?: str
 
   if (!dbLinks || dbLinks.length === 0) {
     return (
-      <section className="flex w-full flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
+      <section className="flex w-full flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
         <HeaderBox title="Análisis y Gráficos" subtext="Vincula una cuenta para ver tu análisis financiero." />
       </section>
     );
@@ -39,7 +39,7 @@ const AnalisisPage = async ({ searchParams }: { searchParams: Promise<{ id?: str
   if (currentAccount) {
     const rawAccountMoves = await getAccountMovements(currentAccount.linkToken, currentAccount.fintocAccountId);
     currentAccountTransactions = rawAccountMoves.map((t: any) => ({
-      ...t, 
+      ...t,
       // Mantenemos el monto original para que el gráfico sepa si es ingreso (+) o egreso (-)
       amount: typeof t.amount === 'number' ? t.amount : Number(t.amount) || 0
     }));
@@ -67,32 +67,32 @@ const AnalisisPage = async ({ searchParams }: { searchParams: Promise<{ id?: str
     .reduce((acc: number, curr: any) => acc + Math.abs(curr.amount), 0);
 
   return (
-    <section className="flex w-full flex-col gap-8 bg-gray-50 px-5 py-7 lg:py-12 min-h-screen">
+    <section className="flex w-full flex-col gap-8 px-5 py-7 lg:py-12 min-h-screen">
       <div className="flex flex-col gap-2">
-        <HeaderBox 
-          title="Análisis y Gráficos" 
-          subtext="Revisa tus ingresos, egresos y el balance de tus gastos hormiga en detalle." 
+        <HeaderBox
+          title="Análisis y Gráficos"
+          subtext="Revisa tus ingresos, egresos y el balance de tus gastos hormiga en detalle."
         />
       </div>
 
       <div className="flex flex-col gap-6 max-w-5xl">
-        
+
         {/* 1. BANNER GLOBAL DE GASTOS HORMIGA */}
-        <AntExpenseSummary 
-          monthlyAntExpenses={monthlyAntExpenses} 
-          totalCurrentBalance={totalCurrentBalance} 
-          monthlyLimit={150000} 
+        <AntExpenseSummary
+          monthlyAntExpenses={monthlyAntExpenses}
+          totalCurrentBalance={totalCurrentBalance}
+          monthlyLimit={150000}
         />
 
         {/* 2. SELECTOR DE BANCO COMPACTO */}
-        <MiniBankDropdown 
-          accounts={allAccounts} 
-          currentAccountId={currentAccount.fintocAccountId} 
+        <MiniBankDropdown
+          accounts={allAccounts}
+          currentAccountId={currentAccount.fintocAccountId}
         />
 
         {/* 3. GRÁFICO (Ahora solo muestra datos del banco seleccionado) */}
         <IncomeExpenseChart transactions={currentAccountTransactions} />
-        
+
       </div>
     </section>
   );

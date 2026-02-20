@@ -45,31 +45,41 @@ const config: Config = {
         '15': '3.75rem',
       },
       colors: {
-        // Azul Horizon/Hormiga
-        bankGradient: "#0179FE", 
+        // ── Dark Purple Palette (nuevo tema) ──────────────────────────
+        purple: {
+          950: "#110916",
+          900: "#1f1019",
+          800: "#2d183b",
+          700: "#3b174d",
+          600: "#572371",
+          500: "#653584",
+          400: "#7c45a0",
+          300: "#9d6dc0",
+        },
+        // ── Azul legacy (no eliminar – usado en lógica/insignias) ─────
+        bankGradient: "#0179FE",
         primary: {
-          500: "#0179FE", // El azul principal de los botones
-          600: "#0162CA",
-          700: "#014E9F",
+          500: "#653584",
+          600: "#572371",
+          700: "#3b174d",
         },
         // Colores de estado (Éxito, Error)
-        success: "#039855", // Verde para ingresos
-        error: "#D92D20",   // Rojo para gastos hormiga
+        success: "#039855",
+        error: "#D92D20",
         warning: "#F79009",
-        
         // Grises para textos y fondos
         black: {
           1: "#15171C",
           2: "#191D23",
         },
         gray: {
-          25: "#FCFCFD", // Fondo muy claro
-          200: "#EAECF0", // Bordes
+          25: "#FCFCFD",
+          200: "#EAECF0",
           300: "#D0D5DD",
-          500: "#667085", // Texto secundario
+          500: "#667085",
           600: "#475467",
-          700: "#344054", // Texto principal
-          900: "#101828", // Títulos
+          700: "#344054",
+          900: "#101828",
         },
         blue: {
           25: "#F5FAFF",
@@ -102,12 +112,14 @@ const config: Config = {
         "ibm-plex-serif": ["var(--font-ibm-plex-serif)"],
       },
       backgroundImage: {
-        "bank-gradient": "linear-gradient(90deg, #0179FE 0%, #4893FF 100%)",
+        "bank-gradient": "linear-gradient(135deg, #3b174d 0%, #572371 50%, #653584 100%)",
         "gradient-mesh": "url('/icons/gradient-mesh.svg')",
       },
       boxShadow: {
-        'chart': '0 1px 3px rgba(0, 0, 0, 0.1)',
-        'profile': '0 8px 16px rgba(0, 0, 0, 0.1)',
+        'chart': '0 1px 3px rgba(0,0,0,0.4)',
+        'profile': '0 8px 16px rgba(0,0,0,0.5)',
+        'glow-purple': '0 0 20px rgba(101,53,132,0.6)',
+        'creditCard': '0 25px 50px -12px rgba(87,35,113,0.5)',
       },
     },
   },

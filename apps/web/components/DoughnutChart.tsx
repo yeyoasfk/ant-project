@@ -15,14 +15,14 @@ const DoughnutChart = ({ accounts }: { accounts: any[] }) => {
       {
         label: 'Saldo Disponible',
         data: balances.length > 0 ? balances : [1], // Previene error si no hay saldos
-        backgroundColor: ['#0747b6', '#2265d8', '#2f91fa', '#4b9afb', '#73b2fa'] 
+        backgroundColor: ['#653584', '#572371', '#3b174d', '#9d6dc0', '#7c45a0']
       }
     ],
     labels: accountNames.length > 0 ? accountNames : ['Sin datos']
   }
 
-  return <Doughnut 
-    data={data} 
+  return <Doughnut
+    data={data}
     options={{
       cutout: '60%',
       plugins: {
