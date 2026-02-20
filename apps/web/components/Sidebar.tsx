@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '../lib/utils'
-import { Home, CreditCard, PieChart, History, Settings } from 'lucide-react'
+import { Home, CreditCard, History } from 'lucide-react'
 import Footer from './Footer'
 
-// Definimos los links de navegación
-const sidebarLinks = [
-  { imgURL: Home, route: '/', label: 'Inicio' },
-  { imgURL: CreditCard, route: '/my-banks', label: 'Mis Bancos' },
-  { imgURL: History, route: '/transaction-history', label: 'Historial' },
+// Definimos los links de navegación - exportado para ser reutilizado en MobileNav
+export const sidebarLinks = [
+  { icon: Home, route: '/', label: 'Inicio' },
+  { icon: CreditCard, route: '/my-banks', label: 'Mis Bancos' },
+  { icon: History, route: '/transaction-history', label: 'Historial' },
 ]
 
 const Sidebar = ({ user }: { user: any }) => {
@@ -17,7 +17,7 @@ const Sidebar = ({ user }: { user: any }) => {
       <nav className="flex flex-col gap-3 sm:gap-4">
         {/* LOGO */}
         <Link href="/" className="mb-8 sm:mb-12 cursor-pointer flex items-center gap-2">
-          <Image 
+          <Image
             src="/icons/logo.png"
             width={36}
             height={36}
@@ -32,9 +32,9 @@ const Sidebar = ({ user }: { user: any }) => {
         {/* LINKS DE NAVEGACIÓN */}
         {sidebarLinks.map((item) => {
           return (
-            <Link 
-              href={item.route} 
-              key={item.label} 
+            <Link
+              href={item.route}
+              key={item.label}
               className={cn(
                 "flex gap-3 items-center py-2.5 sm:py-3 px-2 sm:px-3 xl:px-4 rounded-lg",
                 "justify-center xl:justify-start transition-all duration-200",
@@ -42,7 +42,7 @@ const Sidebar = ({ user }: { user: any }) => {
               )}
             >
               <div className="relative size-5 sm:size-6">
-                <item.imgURL className="size-5 sm:size-6" />
+                <item.icon className="size-5 sm:size-6" />
               </div>
               <p className={cn("hidden xl:block text-15 sm:text-16 font-semibold text-black-2")}>
                 {item.label}
