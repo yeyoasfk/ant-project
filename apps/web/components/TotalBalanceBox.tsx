@@ -41,25 +41,25 @@ const TotalBalanceBox = ({
   // 🛡️ CASO: Sin cuentas
   if (safeAccounts.length === 0) {
     return (
-      <section className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 shadow-chart sm:gap-6 sm:p-6 bg-white">
-        <div className="flex size-full max-w-[100px] items-center sm:max-w-[120px]">
+      <section className="flex flex-col sm:flex-row w-full items-center gap-4 sm:gap-6 rounded-xl border border-gray-200 p-4 sm:p-6 shadow-chart bg-white">
+        <div className="flex size-full max-w-16 sm:max-w-24 md:max-w-28 items-center">
           <div className="flex items-center justify-center w-full h-full rounded-full bg-gray-100">
-            <span className="text-gray-400 text-2xl">💰</span>
+            <span className="text-gray-400 text-xl sm:text-2xl md:text-3xl">💰</span>
           </div>
         </div>
-        <div className="flex flex-col gap-6">
-          <h2 className="text-18 font-semibold text-gray-900">
+        <div className="flex flex-col gap-4 sm:gap-6 w-full text-center sm:text-left">
+          <h2 className="text-16 sm:text-18 md:text-20 font-semibold text-gray-900">
             0 Cuentas Bancarias
           </h2>
           <div className="flex flex-col gap-2">
-            <p className="text-14 font-medium text-gray-600">
+            <p className="text-12 sm:text-14 font-medium text-gray-600">
               Saldo Total Actual
             </p>
-            <div className="text-24 lg:text-30 flex-1 font-semibold text-gray-400 flex items-center gap-2">
+            <div className="text-18 sm:text-24 md:text-28 lg:text-32 flex-1 font-bold text-gray-400 flex items-center justify-center sm:justify-start gap-2">
               {formatAmount(0)}
             </div>
           </div>
-          <p className="text-12 text-gray-500 italic">
+          <p className="text-11 sm:text-12 text-gray-500 italic">
             Vincula tu banco para comenzar
           </p>
         </div>
@@ -70,22 +70,22 @@ const TotalBalanceBox = ({
   return (
     <Link 
       href="/gastos-hormiga" 
-      className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 shadow-chart sm:gap-6 sm:p-6 bg-white transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group"
+      className="flex flex-col sm:flex-row w-full items-center gap-4 sm:gap-6 rounded-xl border border-gray-200 p-4 sm:p-6 shadow-chart bg-white transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group"
     >
-      <div className="flex size-full max-w-[100px] items-center sm:max-w-[120px] transition-transform group-hover:scale-105">
+      <div className="flex size-full max-w-16 sm:max-w-24 md:max-w-28 items-center transition-transform group-hover:scale-105">
         <DoughnutChart accounts={safeAccounts} />
       </div>
 
-      <div className="flex flex-col gap-6">
-        <h2 className="text-18 font-semibold text-gray-900">
+      <div className="flex flex-col gap-4 sm:gap-6 w-full">
+        <h2 className="text-16 sm:text-18 md:text-20 font-semibold text-gray-900 text-center sm:text-left">
           {safeTotalBanks} {safeTotalBanks === 1 ? 'Cuenta Conectada' : 'Cuentas Conectadas'}
         </h2>
         <div className="flex flex-col gap-2">
-          <p className="text-14 font-medium text-gray-600">
+          <p className="text-12 sm:text-14 font-medium text-gray-600 text-center sm:text-left">
             Saldo Total Actual
           </p>
 
-          <div className="text-24 lg:text-30 flex-1 font-bold text-gray-900 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
+          <div className="text-18 sm:text-24 md:text-28 lg:text-32 flex-1 font-bold text-gray-900 flex items-center justify-center sm:justify-start gap-2 group-hover:text-blue-600 transition-colors">
             <CountUp 
               end={safeTotalBalance} 
               decimal=","

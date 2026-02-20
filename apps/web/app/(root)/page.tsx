@@ -29,8 +29,8 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
 
   if (!dbLinks || dbLinks.length === 0) {
     return (
-      <section className="home no-scrollbar flex w-full flex-row max-xl:flex-col overflow-hidden">
-        <div className="no-scrollbar flex w-full flex-1 flex-col gap-8 px-5 py-7 lg:px-8 xl:overflow-y-auto">
+      <section className="flex w-full flex-col overflow-hidden">
+        <div className="flex w-full flex-1 flex-col gap-6 sm:gap-8 px-4 sm:px-6 md:px-8 py-6 sm:py-8">
           <HeaderBox type="greeting" title="Bienvenido," user={loggedInUser.firstName} subtext="Vincula una cuenta para comenzar a analizar tus gastos." />
           <TotalBalanceBox accounts={[]} totalBanks={0} totalCurrentBalance={0} />
         </div>
@@ -86,8 +86,8 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
     .reduce((acc: number, curr: any) => acc + Math.abs(curr.amount), 0);
 
   return (
-    <section className="home no-scrollbar flex w-full flex-row max-xl:flex-col overflow-hidden">
-      <div className="no-scrollbar flex w-full flex-1 flex-col gap-8 px-5 py-7 lg:px-8 xl:overflow-y-auto">
+    <section className="flex w-full flex-col lg:flex-row overflow-hidden">
+      <div className="flex w-full flex-1 flex-col gap-6 sm:gap-8 px-4 sm:px-6 md:px-8 py-6 sm:py-8 overflow-y-auto">
         <header className="home-header">
           <HeaderBox type="greeting" title="Bienvenido," user={loggedInUser.firstName} subtext="Analiza tus gastos hormiga y mantén el control de tus finanzas." />
         </header>
@@ -95,11 +95,11 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         {/* BANNER PRINCIPAL */}
         <TotalBalanceBox accounts={allAccounts} totalBanks={totalBanks} totalCurrentBalance={totalCurrentBalance} />
 
-        {/* 🆕 NUEVO BANNER DE GASTOS HORMIGA (Reemplaza a los 2 cuadros anteriores) */}
+        {/* 🆕 NUEVO BANNER DE GASTOS HORMIGA */}
         <AntExpenseSummary 
           monthlyAntExpenses={monthlyAntExpenses} 
           totalCurrentBalance={totalCurrentBalance} 
-          monthlyLimit={150000} // Límite de ejemplo: $150.000 CLP
+          monthlyLimit={150000}
         />
 
         {/* PESTAÑAS Y TABLA */}
@@ -110,11 +110,14 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
         />
       </div>
 
-      <RightSidebar
-        user={loggedInUser}
-        transactions={sanitizedGlobalExpenses} 
-        banks={allAccounts.slice(0, 2)}
-      />
+      {/* RightSidebar - Oculto en mobile y tablet, visible en lg+ */}
+      <div className="hidden lg:block">
+        <RightSidebar
+          user={loggedInUser}
+          transactions={sanitizedGlobalExpenses} 
+          banks={allAccounts.slice(0, 2)}
+        />
+      </div>
     </section>
   );
 };

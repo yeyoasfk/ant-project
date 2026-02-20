@@ -39,8 +39,8 @@ const CustomInput = ({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-14 font-medium text-gray-700">
+    <div className="flex flex-col gap-1 sm:gap-1.5 w-full">
+      <label className="text-12 sm:text-13 md:text-14 font-medium text-gray-700">
         {label}
       </label>
       <div className="flex w-full flex-col">
@@ -54,7 +54,7 @@ const CustomInput = ({
                     {...fieldProps}
                     value={value || ''}
                     onChange={onChange}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-14 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded-lg border border-gray-300 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 text-12 sm:text-13 md:text-14 bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="" disabled>Seleccionar...</option>
                     {options.map((opt) => (
@@ -69,7 +69,6 @@ const CustomInput = ({
                     value={value || ''}
                     type={type}
                     placeholder={placeholder}
-                    // AQUÍ ESTÁ EL TRUCO 👇
                     onChange={(e) => {
                         if (name === 'dateOfBirth') {
                             handleDateChange(e, onChange);
@@ -77,12 +76,12 @@ const CustomInput = ({
                             onChange(e);
                         }
                     }}
-                    className="rounded-lg border border-gray-300 px-3 py-2 text-14 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded-lg border border-gray-300 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 text-12 sm:text-13 md:text-14 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 )}
                 
                 {error && (
-                    <span className="text-12 text-red-500 mt-1 font-medium animate-pulse">
+                    <span className="text-11 sm:text-12 text-red-500 mt-1 font-medium animate-pulse">
                         {error.message}
                     </span>
                 )}

@@ -56,17 +56,18 @@ const BankConnect = () => {
     <button 
       onClick={openFintoc}
       disabled={isLoading}
-      className="flex items-center gap-2 rounded-lg bg-bankGradient px-6 py-3 text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50"
+      className="flex items-center justify-center gap-2 rounded-lg bg-bankGradient px-4 sm:px-6 py-2.5 sm:py-3 text-12 sm:text-14 md:text-sm font-semibold text-white shadow-md hover:opacity-90 transition-all disabled:opacity-50 w-full sm:w-auto"
     >
       {isLoading ? (
         <>
-          <Loader2 className="animate-spin size-5" />
+          <Loader2 className="animate-spin size-4 sm:size-5" />
           Conectando...
         </>
       ) : (
         <>
-          <Plus className="size-5" />
-          Vincular Cuenta Bancaria
+          <Plus className="size-4 sm:size-5" />
+          <span className="hidden sm:inline">Vincular Cuenta Bancaria</span>
+          <span className="sm:hidden">Vincular Banco</span>
         </>
       )}
     </button>

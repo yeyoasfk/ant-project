@@ -89,44 +89,43 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
   const comunaOptions = COMUNAS_SANTIAGO.map(c => ({ label: c, value: c }));
 
   return (
-    <section className="flex min-h-screen w-full max-w-[420px] flex-col justify-center gap-5 py-6 md:gap-8">
-        <header className="flex flex-col gap-5 md:gap-8">
-            <div className="flex flex-col gap-1 md:gap-3">
-                <h1 className="text-24 lg:text-36 font-semibold text-gray-900">
+    <section className="flex w-full flex-col justify-center gap-4 sm:gap-6 md:gap-8 py-6 sm:py-8">
+        <header className="flex flex-col gap-3 sm:gap-4 md:gap-6">
+            <div className="flex flex-col gap-1 sm:gap-2 md:gap-3">
+                <h1 className="text-20 sm:text-24 md:text-28 lg:text-32 font-bold text-gray-900">
                     {type === 'sign-in' ? 'Iniciar Sesión' : 'Crear Cuenta'}
-                    <p className="text-16 font-normal text-gray-600">
-                        {type === 'sign-in' ? 'Bienvenido de nuevo' : 'Únete a Hormiga hoy'}
-                    </p>
                 </h1>
+                <p className="text-13 sm:text-14 md:text-16 font-normal text-gray-600">
+                    {type === 'sign-in' ? 'Bienvenido de nuevo' : 'Únete a Hormiga hoy'}
+                </p>
             </div>
         </header>
         
         {/* ALERTAS */}
         {successMessage && (
-            <div className="p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+            <div className="p-3 sm:p-4 rounded-md bg-green-50 border border-green-200 text-green-700 text-12 sm:text-13 md:text-14 font-medium animate-in fade-in slide-in-from-top-2">
                 ✅ {successMessage}
             </div>
         )}
 
         {errorMessage && (
-            <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+            <div className="p-3 sm:p-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-12 sm:text-13 md:text-14 font-medium animate-in fade-in slide-in-from-top-2">
                 ⚠️ {errorMessage}
             </div>
         )}
 
         {!successMessage && (
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 sm:gap-5 md:gap-6">
                 {type === 'sign-up' && (
                     <>
-                        <div className="flex gap-4">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                             <CustomInput control={form.control} name="firstName" label="Nombre" placeholder="Ej: Diego" />
                             <CustomInput control={form.control} name="lastName" label="Apellido" placeholder="Ej: Hormiga" />
                         </div>
                         
                         <CustomInput control={form.control} name="address1" label="Dirección" placeholder="Ej: Av. Providencia 1234" />
                         
-                        <div className="flex gap-4">
-                            {/* ✅ SELECT DE REGIÓN */}
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                             <CustomInput 
                                 control={form.control} 
                                 name="state" 
@@ -134,7 +133,6 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
                                 inputType="select" 
                                 options={regionOptions}
                             />
-                            {/* ✅ SELECT DE COMUNA */}
                             <CustomInput 
                                 control={form.control} 
                                 name="city" 
@@ -144,15 +142,13 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
                             />
                         </div>
                         
-                        <div className="flex gap-4">
-                            {/* ✅ FECHA CON MÁSCARA AUTOMÁTICA (CustomInput maneja el /) */}
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                             <CustomInput 
                                 control={form.control} 
                                 name="dateOfBirth" 
-                                label="Fecha Nacimiento" 
+                                label="F. Nacimiento" 
                                 placeholder="YYYY/MM/DD" 
                             />
-                            {/* ✅ RUT (Validación estricta en utils) */}
                             <CustomInput 
                                 control={form.control} 
                                 name="rut" 
@@ -166,13 +162,13 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
                 )}
 
                 <CustomInput control={form.control} name="email" label="Email" placeholder="Ingresa tu correo" />
-                <CustomInput control={form.control} name="password" label="Contraseña" placeholder="********" type="password" />
+                <CustomInput control={form.control} name="password" label="Contraseña" placeholder="••••••••" type="password" />
 
-                <div className="flex flex-col gap-4 pt-4">
-                    <button type="submit" disabled={isLoading} className="bg-bankGradient text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-form">
+                <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 pt-2 sm:pt-4">
+                    <button type="submit" disabled={isLoading} className="w-full bg-bankGradient text-white font-semibold py-2.5 sm:py-3 md:py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-form text-14 sm:text-15 md:text-16">
                         {isLoading ? (
                             <>
-                              <Loader2 size={20} className="animate-spin" /> Procesando...
+                              <Loader2 size={18} className="animate-spin" /> Procesando...
                             </>
                         ) : type === 'sign-in' ? 'Ingresar' : 'Registrarse'}
                     </button>
@@ -180,11 +176,11 @@ const AuthForm = ({ type }: { type: 'sign-in' | 'sign-up' }) => {
             </form>
         )}
 
-        <footer className="flex justify-center gap-1">
-            <p className="text-14 font-normal text-gray-600">
+        <footer className="flex flex-col sm:flex-row justify-center gap-1 text-center">
+            <p className="text-12 sm:text-13 md:text-14 font-normal text-gray-600">
                 {type === 'sign-in' ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
             </p>
-            <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'} className="text-14 cursor-pointer font-medium text-blue-600 hover:underline">
+            <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'} className="text-12 sm:text-13 md:text-14 cursor-pointer font-medium text-blue-600 hover:underline">
                 {type === 'sign-in' ? "Regístrate" : "Inicia sesión"}
             </Link>
         </footer>

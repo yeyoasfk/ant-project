@@ -18,32 +18,32 @@ const Footer = ({ user, type = 'desktop' }: { user: any, type?: 'mobile' | 'desk
 
   return (
     <>
-      <footer className="relative flex cursor-pointer items-center justify-between gap-2 py-6">
+      <footer className="relative flex cursor-pointer items-center justify-between gap-2 py-4 sm:py-6">
           
           {/* INFORMACIÓN DEL USUARIO */}
-          <div className={cn("flex flex-1 flex-col justify-center gap-1", type === 'mobile' ? '' : 'xl:flex')}>
-              <h1 className="text-14 truncate font-semibold text-gray-700 font-ibm-plex-serif">
+          <div className={cn("flex flex-1 flex-col justify-center gap-0.5 sm:gap-1 min-w-0", type === 'mobile' ? '' : 'xl:flex')}>
+              <h1 className="text-12 sm:text-14 truncate font-semibold text-gray-700 font-ibm-plex-serif">
                   {user?.firstName} {user?.lastName}
               </h1>
-              <p className="text-12 truncate font-normal text-gray-500">
+              <p className="text-11 sm:text-12 truncate font-normal text-gray-500">
                   {user?.email}
               </p>
           </div>
 
-          {/* BOTÓN DE SALIDA (Abre confirmación) */}
+          {/* BOTÓN DE SALIDA */}
           <div 
-              className="relative size-10 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-red-50 group transition-colors border border-transparent hover:border-red-100"
-              onClick={() => setShowConfirm(true)} // 👈 Activamos el modal
+              className="relative size-9 sm:size-10 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-red-50 group transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
+              onClick={() => setShowConfirm(true)}
               title="Cerrar Sesión"
           >
-              <LogOut className="size-5 text-gray-500 group-hover:text-red-600 transition-colors" />
+              <LogOut className="size-4 sm:size-5 text-gray-500 group-hover:text-red-600 transition-colors" />
           </div>
       </footer>
 
-      {/* --- MODAL DE CONFIRMACIÓN --- */}
+      {/* MODAL DE CONFIRMACIÓN */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl border border-gray-100 scale-100 animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-sm rounded-xl bg-white p-4 sm:p-6 shadow-2xl border border-gray-100 scale-100 animate-in zoom-in-95 duration-200">
                 
                 <div className="flex flex-col gap-4 text-center">
                     <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-red-100">

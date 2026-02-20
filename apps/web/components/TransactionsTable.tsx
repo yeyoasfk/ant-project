@@ -133,81 +133,83 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
   const sortedData = getSortedTransactions();
 
   return (
-    <table className="w-full border-collapse">
-      <thead className="bg-[#f9fafb]">
-        <tr>
-          {/* Transacción */}
-          <th onClick={() => handleSort('name')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none group">
-            <div className="flex items-center">Transacción {renderSortIcon('name')}</div>
-          </th>
+    <div className="w-full overflow-x-auto">
+      <table className="w-full border-collapse min-w-full">
+        <thead className="bg-gray-50 sticky top-0">
+          <tr>
+            {/* Transacción */}
+            <th onClick={() => handleSort('name')} className="px-3 sm:px-4 py-2 sm:py-3 text-left text-11 sm:text-12 md:text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <div className="flex items-center gap-1">Transacción {renderSortIcon('name')}</div>
+            </th>
 
-          {/* Monto */}
-          <th onClick={() => handleSort('amount')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none">
-            <div className="flex items-center">Monto {renderSortIcon('amount')}</div>
-          </th>
+            {/* Monto */}
+            <th onClick={() => handleSort('amount')} className="px-3 sm:px-4 py-2 sm:py-3 text-left text-11 sm:text-12 md:text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <div className="flex items-center gap-1">Monto {renderSortIcon('amount')}</div>
+            </th>
 
-          {/* Estado */}
-          <th onClick={() => handleSort('status')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
-            <div className="flex items-center">Estado {renderSortIcon('status')}</div>
-          </th>
+            {/* Estado */}
+            <th onClick={() => handleSort('status')} className="px-3 sm:px-4 py-2 sm:py-3 text-left text-11 sm:text-12 md:text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <div className="flex items-center gap-1">Estado {renderSortIcon('status')}</div>
+            </th>
 
-          {/* Fecha */}
-          <th onClick={() => handleSort('date')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
-            <div className="flex items-center">Fecha {renderSortIcon('date')}</div>
-          </th>
+            {/* Fecha */}
+            <th onClick={() => handleSort('date')} className="px-3 sm:px-4 py-2 sm:py-3 text-left text-11 sm:text-12 md:text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <div className="flex items-center gap-1">Fecha {renderSortIcon('date')}</div>
+            </th>
 
-          {/* Categoría */}
-          <th onClick={() => handleSort('category')} className="px-4 py-3 text-left text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none">
-            <div className="flex items-center">Categoría {renderSortIcon('category')}</div>
-          </th>
-        </tr>
-      </thead>
+            {/* Categoría */}
+            <th onClick={() => handleSort('category')} className="px-3 sm:px-4 py-2 sm:py-3 text-left text-11 sm:text-12 md:text-sm font-semibold text-gray-700 max-md:hidden cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap">
+              <div className="flex items-center gap-1">Categoría {renderSortIcon('category')}</div>
+            </th>
+          </tr>
+        </thead>
 
-      <tbody>
-        {sortedData.map((t: any) => {
-          const status = getTransactionStatus(new Date(t.date));
-          const isDebit = t.type === 'debit';
-          const isIncome = t.category === 'Ingreso';
+        <tbody>
+          {sortedData.map((t: any) => {
+            const status = getTransactionStatus(new Date(t.date));
+            const isDebit = t.type === 'debit';
+            const isIncome = t.category === 'Ingreso';
 
-          return (
-            <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-              <td className="max-w-[150px] md:max-w-[250px] pl-4 py-4 pr-10"> 
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 transition-colors">
-                    {t.name[0]}
+            return (
+              <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors group">
+                <td className="max-w-24 sm:max-w-48 md:max-w-xs pl-3 sm:pl-4 py-3 sm:py-4 pr-2 sm:pr-10"> 
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex size-8 sm:size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 transition-colors text-11 sm:text-sm">
+                      {t.name[0]}
+                    </div>
+                    <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                      <h1 className="text-12 sm:text-14 font-semibold text-gray-900 truncate"> 
+                        {t.name}
+                      </h1>
+                      <p className="text-10 sm:text-xs text-gray-500 md:hidden truncate">
+                        {t.category}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <h1 className="text-14 font-semibold text-gray-900 truncate"> 
-                      {t.name}
-                    </h1>
-                    <p className="text-xs text-gray-500 md:hidden truncate">
-                      {t.category}
-                    </p>
+                </td>
+                <td className={cn("pl-3 sm:pl-4 py-3 sm:py-4 pr-2 sm:pr-10 font-semibold text-12 sm:text-14 whitespace-nowrap", isDebit || !isIncome ? 'text-red-600' : 'text-green-600')}>
+                  {isDebit ? '-' : '+'}{formatAmount(t.amount)}
+                </td>
+                <td className="pl-3 sm:pl-4 py-3 sm:py-4 pr-2 sm:pr-10 max-md:hidden">
+                  <div className={cn("flex items-center gap-1 sm:gap-2 px-2 py-1 rounded-full w-fit text-10 sm:text-xs font-medium border whitespace-nowrap",
+                    status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
+                  )}>
+                    <div className={cn("size-1.5 sm:size-2 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-600')} />
+                    {status}
                   </div>
-                </div>
-              </td>
-              <td className={cn("pl-4 py-4 pr-10 font-semibold text-14", isDebit || !isIncome ? 'text-red-600' : 'text-green-600')}>
-                {isDebit ? '-' : '+'}{formatAmount(t.amount)}
-              </td>
-              <td className="pl-4 py-4 pr-10 max-md:hidden">
-                <div className={cn("flex items-center gap-2 px-2 py-1 rounded-full w-fit text-xs font-medium border",
-                  status === 'Exitoso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
-                )}>
-                  <div className={cn("size-2 rounded-full", status === 'Exitoso' ? 'bg-green-600' : 'bg-gray-600')} />
-                  {status}
-                </div>
-              </td>
-              <td className="pl-4 py-4 pr-10 text-14 text-gray-600 max-md:hidden min-w-[120px]">
-                {formatDateTime(t.date)}
-              </td>
-              <td className="pl-4 py-4 pr-10 max-md:hidden">
-                <CategoryBadge category={t.category} />
-              </td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
+                </td>
+                <td className="pl-3 sm:pl-4 py-3 sm:py-4 pr-2 sm:pr-10 text-12 sm:text-14 text-gray-600 max-md:hidden min-w-max">
+                  {formatDateTime(t.date)}
+                </td>
+                <td className="pl-3 sm:pl-4 py-3 sm:py-4 pr-2 sm:pr-10 max-md:hidden">
+                  <CategoryBadge category={t.category} />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
