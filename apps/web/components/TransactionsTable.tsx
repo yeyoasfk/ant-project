@@ -171,13 +171,13 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
 
           return (
             <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-              <td className="max-w-[150px] md:max-w-[250px] pl-4 py-4 pr-10"> {/* 👈 Añadimos max-w dinámico */}
+              <td className="max-w-[150px] md:max-w-[250px] pl-4 py-4 pr-10"> 
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-blue-700 font-bold group-hover:bg-blue-100 transition-colors">
                     {t.name[0]}
                   </div>
-                  <div className="flex flex-col gap-1 min-w-0"> {/* 👈 min-w-0 es CLAVE para que truncate funcione en flex */}
-                    <h1 className="text-14 font-semibold text-gray-900 truncate"> {/* 👈 truncate añade los "..." */}
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <h1 className="text-14 font-semibold text-gray-900 truncate"> 
                       {t.name}
                     </h1>
                     <p className="text-xs text-gray-500 md:hidden truncate">

@@ -4,6 +4,7 @@ import { formatAmount } from '../lib/utils';
 import CountUp from 'react-countup';
 import DoughnutChart from './DoughnutChart';
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 const TotalBalanceBox = ({
   accounts = [], 
@@ -67,36 +68,35 @@ const TotalBalanceBox = ({
   }
 
   return (
-    <section className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 shadow-chart sm:gap-6 sm:p-6 bg-white">
-      <div className="flex size-full max-w-[100px] items-center sm:max-w-[120px]">
+    <Link 
+      href="/gastos-hormiga" 
+      className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 shadow-chart sm:gap-6 sm:p-6 bg-white transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group"
+    >
+      <div className="flex size-full max-w-[100px] items-center sm:max-w-[120px] transition-transform group-hover:scale-105">
         <DoughnutChart accounts={safeAccounts} />
       </div>
 
       <div className="flex flex-col gap-6">
         <h2 className="text-18 font-semibold text-gray-900">
-          {safeTotalBanks} {safeTotalBanks === 1 ? 'Cuenta Bancaria' : 'Cuentas Bancarias'}
+          {safeTotalBanks} {safeTotalBanks === 1 ? 'Cuenta Conectada' : 'Cuentas Conectadas'}
         </h2>
         <div className="flex flex-col gap-2">
           <p className="text-14 font-medium text-gray-600">
             Saldo Total Actual
           </p>
 
-          <div className="text-24 lg:text-30 flex-1 font-semibold text-gray-900 flex items-center gap-2">
+          <div className="text-24 lg:text-30 flex-1 font-bold text-gray-900 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
             <CountUp 
               end={safeTotalBalance} 
               decimal=","
               prefix="$"
               duration={2}
-              formattingFn={(value) => {
-                const numValue = typeof value === 'number' && !isNaN(value) ? value : 0;
-                return formatAmount(numValue);
-              }}
+              formattingFn={(value) => formatAmount(value)}
             />
           </div>
         </div>
       </div>
-    </section>
+    </Link>
   )
 }
-
 export default TotalBalanceBox;

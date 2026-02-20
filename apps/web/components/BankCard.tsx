@@ -19,7 +19,6 @@ const BankCard = ({
   
   // 🛡️ VALIDACIÓN Y SANITIZACIÓN
   if (!account) {
-    console.error("❌ [BankCard] account es undefined o null");
     return (
       <div className="flex h-[190px] w-full max-w-[320px] items-center justify-center rounded-[20px] border border-gray-300 bg-gray-100">
         <p className="text-gray-500">Error: Cuenta no disponible</p>
@@ -27,28 +26,36 @@ const BankCard = ({
     );
   }
 
-  // Sanitizar datos de la cuenta
-  const safeBalance = typeof account.currentBalance === 'number' && !isNaN(account.currentBalance)
-    ? account.currentBalance
-    : Number(account.currentBalance) || 0;
-  
-  const safeMask = account.mask || '****';
-  const safeName = account.name || account.officialName || account.institution_name || userName;
+  // 1. Extracción Segura de Datos
+  const safeBalance = account.currentBalance || 0;
+  // Fintoc entrega el nombre corto de la cuenta en "name" (ej. "Cuenta Vista") y el banco en "institutionName"
+  const safeBankName = account.institutionName || account.name || 'Banco Desconocido';
+  const accountTypeLabel = account.name || 'Cuenta'; 
+  const safeMask = account.number ? account.number.slice(-4) : '****';
   const safeUserName = userName || 'Usuario';
 
-  // 1. Definimos el estilo del fondo (Azul o Morado)
+  // 2. Lógica de la Barra de Gastos
+  // Límite Mensual Dinámico: Si tu sueldo/ingreso normal no está seteado, usamos un valor base razonable.
+  // Aquí asumo un límite de 1.000.000 CLP para que la barra se mueva, pero puedes ajustarlo.
+  const monthlyLimit = 1000000; 
+  const spentThisMonth = account.spentThisMonth || 0;
+  
+  // Calculamos el porcentaje, asegurando que no pase del 100%
+  const progressPercentage = Math.min((spentThisMonth / monthlyLimit) * 100, 100);
+
+  // 3. Definimos el estilo del fondo
   const bgStyle = color === "purple" 
     ? "bg-gradient-to-r from-purple-500 to-indigo-600"
     : "bg-bank-gradient";
 
-  // 2. Creamos el contenido visual de la tarjeta (para no repetirlo)
+  // 4. Contenido visual de la tarjeta
   const CardContent = () => (
     <>
         {/* Lado Izquierdo: Información */}
         <div className="relative z-10 flex size-full flex-col justify-between rounded-l-[20px] bg-gray-700/10 px-5 pb-4 pt-5">
           <div>
-            <h1 className="text-16 font-semibold text-white">
-              {safeName}
+            <h1 className="text-16 font-semibold text-white truncate max-w-[150px]" title={safeBankName}>
+              {safeBankName}
             </h1>
             <p className="font-ibm-plex-serif font-black text-white">
               {formatAmount(safeBalance)}
@@ -57,7 +64,7 @@ const BankCard = ({
 
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
-              <h1 className="text-12 font-semibold text-white">
+              <h1 className="text-12 font-semibold text-white truncate max-w-[100px]" title={safeUserName}>
                 {safeUserName}
               </h1>
               <h2 className="text-12 font-semibold text-white">
@@ -72,7 +79,9 @@ const BankCard = ({
 
         {/* Lado Derecho: Diseño Visual (Visa/Mastercard) */}
         <div className="flex size-full flex-col items-end justify-between rounded-r-[20px] bg-cover bg-center bg-no-repeat py-5 pr-5">
-           <div className="text-white font-bold text-xs uppercase">Paypass</div>
+           <div className="text-white font-bold text-xs uppercase truncate max-w-[80px]" title={accountTypeLabel}>
+             {accountTypeLabel}
+           </div>
            <div className="flex flex-col items-end">
                {color === 'purple' ? (
                    <span className="text-white font-bold text-2xl italic">Mastercard</span>
@@ -84,17 +93,16 @@ const BankCard = ({
     </>
   );
 
-  // Clases comunes para el contenedor de la tarjeta
   const cardClasses = cn(
-    "relative flex h-[190px] w-full max-w-[320px] justify-between rounded-[20px] border border-white shadow-creditCard backdrop-blur-[6px] transition-all duration-500 ease-in-out select-none",
+    "relative flex h-[190px] w-full max-w-[320px] justify-between rounded-[20px] border border-white shadow-creditCard backdrop-blur-[6px] transition-all duration-500 ease-in-out select-none cursor-pointer hover:opacity-90",
     bgStyle
   );
 
   return (
-    <div className="flex flex-col">
-      {/* 3. Renderizamos la Tarjeta (Como Link o como Div simple) */}
-      {isLink && account.id ? (
-        <Link href={`/transaction-history/?id=${account.id}`} className={cardClasses}>
+    <div className="flex flex-col w-full max-w-[320px]">
+      {/* TARJETA */}
+      {isLink && account.fintocAccountId ? (
+        <Link href={`/transaction-history/?id=${account.fintocAccountId}`} className={cardClasses}>
           <CardContent />
         </Link>
       ) : (
@@ -103,22 +111,21 @@ const BankCard = ({
         </div>
       )}
 
-      {/* 4. Barra de Progreso (Límite Mensual) - Solo si showBalance es true */}
+      {/* BARRA DE PROGRESO (GASTO MENSUAL) */}
       {showBalance && (
         <div className="mt-3 flex flex-col gap-1 px-1">
            <div className="flex justify-between text-xs font-medium text-gray-600">
-              <span>Gastado este mes</span>
-              {/* Aquí simulamos un gasto vs límite */}
-              <span className="text-blue-600 font-bold">$250.000 / $500.000</span>
+             <span>Gastado este mes</span>
+             <span className="text-blue-600 font-bold truncate">
+               {formatAmount(spentThisMonth)} / {formatAmount(monthlyLimit)}
+             </span>
            </div>
            
-           {/* Barra de fondo */}
-           <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-              {/* Barra de progreso (Azul o Morada según el tema) */}
-              <div 
-                className={cn("h-full rounded-full", color === 'purple' ? 'bg-purple-500' : 'bg-blue-600')} 
-                style={{ width: '50%' }}
-              ></div>
+           <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden relative">
+             <div 
+               className={cn("h-full rounded-full transition-all duration-1000", color === 'purple' ? 'bg-purple-500' : 'bg-blue-600')} 
+               style={{ width: `${progressPercentage}%` }}
+             ></div>
            </div>
         </div>
       )}

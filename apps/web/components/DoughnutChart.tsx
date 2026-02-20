@@ -6,16 +6,19 @@ import { Doughnut } from "react-chartjs-2";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DoughnutChart = ({ accounts }: { accounts: any[] }) => {
-  // Datos simulados para el diseño (luego conectaremos tus datos reales de Fintoc)
+  // 🧠 MAGIA AQUÍ: Extraemos los nombres y saldos reales de tu arreglo 'accounts'
+  const accountNames = accounts.map((a) => a.institutionName || a.name || 'Banco');
+  const balances = accounts.map((a) => a.currentBalance || 0);
+
   const data = {
     datasets: [
       {
-        label: 'Saldo',
-        data: [125000, 250000, 50000], // Ej: Santander, BancoEstado, Falabella
-        backgroundColor: ['#0747b6', '#2265d8', '#2f91fa'] 
+        label: 'Saldo Disponible',
+        data: balances.length > 0 ? balances : [1], // Previene error si no hay saldos
+        backgroundColor: ['#0747b6', '#2265d8', '#2f91fa', '#4b9afb', '#73b2fa'] 
       }
     ],
-    labels: ['Santander', 'Banco Estado', 'Falabella']
+    labels: accountNames.length > 0 ? accountNames : ['Sin datos']
   }
 
   return <Doughnut 
