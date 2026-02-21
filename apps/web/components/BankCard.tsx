@@ -7,6 +7,7 @@ interface CreditCardProps {
   showBalance?: boolean;
   color?: string;
   isLink?: boolean;
+  isGlass?: boolean;
 }
 
 const BankCard = ({
@@ -14,7 +15,8 @@ const BankCard = ({
   userName,
   showBalance = true,
   color = "blue",
-  isLink = true
+  isLink = true,
+  isGlass = false,
 }: CreditCardProps) => {
 
   // 🛡️ VALIDACIÓN Y SANITIZACIÓN
@@ -43,8 +45,10 @@ const BankCard = ({
   // Calculamos el porcentaje, asegurando que no pase del 100%
   const progressPercentage = Math.min((spentThisMonth / monthlyLimit) * 100, 100);
 
-  // 3. Definimos el estilo del fondo – siempre usa el gradiente púrpura premium
-  const bgStyle = "bg-bank-gradient";
+  // 3. Definimos el estilo del fondo – sólido o cristal según la prop isGlass
+  const bgStyle = isGlass
+    ? "bg-white/10 backdrop-blur-xl border-white/30"
+    : "bg-bank-gradient";
 
   // 4. Contenido visual de la tarjeta
   const CardContent = () => (
