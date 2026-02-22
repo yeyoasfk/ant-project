@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { formatAmount } from '@/lib/utils'
 import { useEffect } from 'react'
+import GlassContainer from './GlassContainer';
 
 const RecentTransactions = ({
     transactions = [],
@@ -120,7 +121,7 @@ const RecentTransactions = ({
             </div>
 
             {/* LISTA DE TRANSACCIONES */}
-            <div className="flex flex-col gap-2 sm:gap-3 rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-4 sm:p-6 shadow-2xl min-h-[100px]">
+            <GlassContainer size="md">
                 {safeTransactions.length > 0 ? (
                     safeTransactions.slice(0, 5).map((t: any) => {
                         const rawAmount = typeof t.amount === 'number' ? t.amount : Number(t.amount) || 0;
@@ -161,7 +162,7 @@ const RecentTransactions = ({
                         )}
                     </div>
                 )}
-            </div>
+            </GlassContainer>
 
         </div>
     )

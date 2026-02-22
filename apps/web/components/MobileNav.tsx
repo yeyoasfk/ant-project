@@ -3,17 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, Home, CreditCard, History } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { cn } from '../lib/utils'
 import Footer from './Footer'
 import BankStack from './BankStack'
-
-// ─── Nav links (same as Sidebar) ────────────────────────────────────────────
-const sidebarLinks = [
-    { icon: Home, route: '/', label: 'Inicio' },
-    { icon: CreditCard, route: '/my-banks', label: 'Mis Bancos' },
-    { icon: History, route: '/transaction-history', label: 'Historial' },
-]
+import { sidebarLinks } from './Sidebar'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MobileNavProps {

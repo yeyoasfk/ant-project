@@ -1,5 +1,6 @@
 import { formatAmount } from '@/lib/utils';
 import { ArrowUpRight, Wallet, CheckSquare } from 'lucide-react';
+import GlassContainer from './GlassContainer';
 
 const AntExpenseSummary = ({
   monthlyAntExpenses = 0,
@@ -16,7 +17,7 @@ const AntExpenseSummary = ({
   const formattedPercentage = percentage.toFixed(0);
 
   return (
-    <div className="flex w-full flex-col gap-3 sm:gap-4 rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-4 sm:p-6 shadow-2xl transition-all hover:border-[#572371]/50">
+    <GlassContainer className="w-full">
 
       {/* 🎯 PARTE SUPERIOR: Textos y Saldos Centrados Armónicamente */}
       <div className="flex w-full flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 md:gap-24">
@@ -72,7 +73,7 @@ const AntExpenseSummary = ({
           Llevas Un <span className="text-[#9d6dc0] font-bold">{formattedPercentage}%</span> De Tus Gastos Hormigas Mensuales
         </p>
       </div>
-    </div>
+    </GlassContainer>
   );
 }
 

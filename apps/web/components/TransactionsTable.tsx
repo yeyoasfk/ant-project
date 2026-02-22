@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { formatAmount, formatDateTime, getTransactionStatus, cn } from '../lib/utils'
 import { ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
+import GlassContainer from './GlassContainer';
 
 const CategoryBadge = ({ category }: { category: string }) => {
   // Dark-theme badge colours
@@ -111,7 +112,7 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
   const sortedData = getSortedTransactions();
 
   return (
-    <div className="w-full">
+    <GlassContainer size="lg" className="p-0 md:p-0">
 
       {/* ── MOBILE: Card list (< md) ─────────────────────────────────── */}
       <div className="flex flex-col divide-y divide-white/5 md:hidden">
@@ -220,7 +221,7 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
           </tbody>
         </table>
       </div>
-    </div>
+    </GlassContainer>
   )
 }
 

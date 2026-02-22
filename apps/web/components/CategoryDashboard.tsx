@@ -5,6 +5,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2';
 import { formatAmount } from '@/lib/utils';
 import { ArrowLeft, LayoutGrid } from 'lucide-react';
+import GlassContainer from './GlassContainer';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -145,76 +146,66 @@ export default function CategoryDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto">
+    <div className="flex flex-col gap-6 md:gap-8 w-full max-w-6xl mx-auto px-4 md:px-0">
       
       {/* 📊 SECCIÓN SUPERIOR: GRÁFICO CON EFECTO NEÓN GLOW */}
-      <div className="relative group">
-        {/* 1. CAPA EXTERIOR: El Borde Degradado y el Resplandor (Glow) */}
-        <div 
-          className="absolute -inset-[2px] rounded-3xl bg-gradient-to-br from-fuchsia-600 via-[#9333ea] to-transparent opacity-70 blur-sm group-hover:opacity-100 transition-all duration-500" 
-          aria-hidden="true"
-        />
-        
-        {/* 2. CAPA INTERIOR: El Contenido Acrílico Oscuro */}
-        <div className="relative flex flex-col gap-6 rounded-3xl bg-[#110916]/80 backdrop-blur-2xl border border-white/10 p-6 md:p-8 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-          
-          {/* Cabecera del Gráfico */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {selectedCategory ? (
-                <>
-                  <button 
-                    onClick={() => setSelectedCategory(null)}
-                    className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
-                  >
-                    <ArrowLeft className="size-5" />
-                  </button>
-                  <div>
-                    <h2 className="text-18 font-bold text-white flex items-center gap-2">
-                      {selectedCategory.icon} Análisis: {selectedCategory.name}
-                    </h2>
-                    <p className="text-13 text-gray-400">Historial de gastos del presupuesto</p>
-                  </div>
-                </>
-              ) : (
+      <GlassContainer variant={selectedCategory ? "default" : "default"}>
+        {/* Cabecera del Gráfico */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+          <div className="flex items-start md:items-center gap-2 md:gap-3">
+            {selectedCategory ? (
+              <>
+                <button 
+                  onClick={() => setSelectedCategory(null)}
+                  className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft className="size-4 md:size-5" />
+                </button>
                 <div>
-                  <h2 className="text-18 font-bold text-white flex items-center gap-2">
-                    <LayoutGrid className="size-5 text-[#653584]" /> Top 7: Al límite
+                  <h2 className="text-14 md:text-18 font-bold text-white flex items-center gap-2">
+                    {selectedCategory.icon} Análisis: {selectedCategory.name}
                   </h2>
-                  <p className="text-13 text-gray-400">Categorías más cercanas a su presupuesto máximo</p>
+                  <p className="text-12 md:text-13 text-gray-400">Historial de gastos del presupuesto</p>
                 </div>
-              )}
-            </div>
-
-            {/* Pestañas de Tiempo (Solo visibles si hay categoría seleccionada) */}
-            {selectedCategory && (
-              <div className="flex bg-black/40 p-1 rounded-full border border-white/5">
-                {['dia', 'semana', 'mes'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setTimeframe(tab as any)}
-                    className={`px-4 py-1.5 rounded-full text-12 font-semibold capitalize transition-all ${
-                      timeframe === tab ? 'bg-[#572371] text-white shadow-md' : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              </>
+            ) : (
+              <div>
+                <h2 className="text-14 md:text-18 font-bold text-white flex items-center gap-2">
+                  <LayoutGrid className="size-4 md:size-5 text-[#653584]" /> Top 7: Al límite
+                </h2>
+                <p className="text-12 md:text-13 text-gray-400">Categorías más cercanas a su presupuesto máximo</p>
               </div>
             )}
           </div>
 
-          {/* El Gráfico */}
-          <div className="h-[280px] w-full mt-4">
-            <Bar data={chartData as any} options={chartOptions as any} />
-          </div>
+          {/* Pestañas de Tiempo (Solo visibles si hay categoría seleccionada) */}
+          {selectedCategory && (
+            <div className="flex bg-black/40 p-1 rounded-full border border-white/5">
+              {['dia', 'semana', 'mes'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setTimeframe(tab as any)}
+                  className={`px-3 md:px-4 py-1.5 rounded-full text-11 md:text-12 font-semibold capitalize transition-all ${
+                    timeframe === tab ? 'bg-[#572371] text-white shadow-md' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* El Gráfico - Altura responsiva */}
+        <div className="h-[240px] md:h-[280px] w-full mt-2 md:mt-4">
+          <Bar data={chartData as any} options={chartOptions as any} />
+        </div>
+      </GlassContainer>
 
       {/* 📋 SECCIÓN INFERIOR: LISTA DE CATEGORÍAS */}
-      <div className="flex flex-col gap-4">
-        <h3 className="text-16 font-semibold text-white px-2">Todas tus Categorías</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-3 md:gap-4">
+        <h3 className="text-14 md:text-16 font-semibold text-white px-2 md:px-0">Todas tus Categorías</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {mockCategories.map((category) => {
             const percentage = Math.min((category.spent / category.limit) * 100, 100);
             const isDanger = percentage >= 90;
@@ -224,22 +215,22 @@ export default function CategoryDashboard() {
               <div 
                 key={category.id}
                 onClick={() => setSelectedCategory(category)}
-                className={`group cursor-pointer flex flex-col gap-3 p-5 rounded-2xl border transition-all duration-300 ${
+                className={`group cursor-pointer flex flex-col gap-2 md:gap-3 p-4 md:p-5 rounded-xl md:rounded-2xl border transition-all duration-300 ${
                   isSelected 
                     ? 'bg-[#3b174d]/80 border-[#653584] shadow-[0_0_15px_rgba(101,53,132,0.4)]' 
                     : 'bg-[#1f1019]/40 border-white/5 hover:border-[#572371]/50 hover:bg-[#2d183b]/40 backdrop-blur-md'
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-black/30 border border-white/5 flex items-center justify-center text-xl">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="size-9 md:size-10 rounded-full bg-black/30 border border-white/5 flex items-center justify-center text-lg md:text-xl flex-shrink-0">
                       {category.icon}
                     </div>
-                    <span className="font-bold text-gray-200">{category.name}</span>
+                    <span className="font-bold text-sm md:text-base text-gray-200">{category.name}</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-15 font-bold text-white">{formatAmount(category.spent)}</span>
-                    <span className="text-11 text-gray-500 font-medium">de {formatAmount(category.limit)}</span>
+                    <span className="text-13 md:text-15 font-bold text-white">{formatAmount(category.spent)}</span>
+                    <span className="text-10 md:text-11 text-gray-500 font-medium">de {formatAmount(category.limit)}</span>
                   </div>
                 </div>
 
@@ -250,7 +241,7 @@ export default function CategoryDashboard() {
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                {isDanger && <p className="text-[10px] text-red-400 font-semibold text-right mt-1">¡Cerca del límite!</p>}
+                {isDanger && <p className="text-[10px] md:text-xs text-red-400 font-semibold text-right mt-1">¡Cerca del límite!</p>}
               </div>
             )
           })}

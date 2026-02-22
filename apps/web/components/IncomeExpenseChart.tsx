@@ -5,6 +5,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2';
 import { formatAmount } from '@/lib/utils';
 import { Calendar, Search, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import GlassContainer from './GlassContainer';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -157,7 +158,7 @@ export default function IncomeExpenseChart({ transactions }: { transactions: any
       </div>
 
       {/* TARJETA DEL GRÁFICO */}
-      <div className="rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-6 shadow-2xl">
+      <GlassContainer size="lg">
         <div className="flex items-center justify-between mb-6 relative">
           <h2 className="text-18 font-bold text-white">Ingresos &amp; Egresos</h2>
 
@@ -190,10 +191,10 @@ export default function IncomeExpenseChart({ transactions }: { transactions: any
         <div className="h-[250px] w-full">
           <Bar data={chartData} options={chartOptions} />
         </div>
-      </div>
+      </GlassContainer>
 
       {/* CUADRO DE RESUMEN (Ingreso vs Egreso) */}
-      <div className="flex flex-row items-center justify-between md:justify-around rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-6 shadow-2xl">
+      <GlassContainer variant="default" size="lg">
         {/* Total Ingreso */}
         <div className="flex flex-col items-center gap-2 w-1/2 border-r border-white/10">
           <div className="flex items-center gap-1.5">
@@ -215,7 +216,7 @@ export default function IncomeExpenseChart({ transactions }: { transactions: any
           </div>
           <p className="text-24 font-bold text-[#9d6dc0]">{formatAmount(totals.egreso)}</p>
         </div>
-      </div>
+      </GlassContainer>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import GlassContainer from './GlassContainer';
 
 const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
 
@@ -25,10 +26,10 @@ const AntExpenseChart = ({ data }: AntExpenseChartProps) => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm min-h-[400px]">
+    <GlassContainer className="min-h-[400px]">
       <div className="flex flex-col gap-1">
-        <h3 className="text-lg font-bold text-gray-900">Análisis de Gastos Hormiga</h3>
-        <p className="text-sm text-gray-500">Distribución de tus fugas de dinero</p>
+        <h3 className="text-lg font-bold text-white">Análisis de Gastos Hormiga</h3>
+        <p className="text-sm text-gray-400">Distribución de tus fugas de dinero</p>
       </div>
 
       <div className="h-[300px] w-full">
@@ -59,7 +60,7 @@ const AntExpenseChart = ({ data }: AntExpenseChartProps) => {
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </GlassContainer>
   );
 };
 
