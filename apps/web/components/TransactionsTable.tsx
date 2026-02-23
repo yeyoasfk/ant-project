@@ -119,7 +119,6 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
         {sortedData.map((t: any) => {
           const status = getTransactionStatus(new Date(t.date));
           const isDebit = t.type === 'debit';
-          const isIncome = t.category === 'Ingreso';
 
           return (
             <div key={t.id} className="flex items-center gap-3 px-1 py-3.5 hover:bg-white/5 transition-colors">
@@ -139,8 +138,7 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
 
               {/* Amount + Status */}
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className={cn("text-sm font-bold whitespace-nowrap", isDebit || !isIncome ? 'text-red-400' : 'text-green-400')}>
-                  {isDebit ? '-' : '+'}{formatAmount(t.amount)}
+                <span className={cn("text-sm font-bold whitespace-nowrap", isDebit ? 'text-red-400' : 'text-green-400')}>                  {isDebit ? '-' : '+'}{formatAmount(t.amount)}
                 </span>
                 <div className={cn(
                   "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border whitespace-nowrap",
@@ -184,7 +182,6 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
             {sortedData.map((t: any) => {
               const status = getTransactionStatus(new Date(t.date));
               const isDebit = t.type === 'debit';
-              const isIncome = t.category === 'Ingreso';
 
               return (
                 <tr key={t.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
@@ -196,8 +193,7 @@ const TransactionsTable = ({ transactions }: { transactions: any[] }) => {
                       <h1 className="text-14 font-semibold text-gray-100 truncate">{t.name}</h1>
                     </div>
                   </td>
-                  <td className={cn("pl-4 py-4 pr-10 font-semibold text-14 whitespace-nowrap", isDebit || !isIncome ? 'text-red-400' : 'text-green-400')}>
-                    {isDebit ? '-' : '+'}{formatAmount(t.amount)}
+                  <td className={cn("pl-4 py-4 pr-10 font-semibold text-14 whitespace-nowrap", isDebit ? 'text-red-400' : 'text-green-400')}>                    {isDebit ? '-' : '+'}{formatAmount(t.amount)}
                   </td>
                   <td className="pl-4 py-4 pr-10">
                     <div className={cn("flex items-center gap-2 px-2 py-1 rounded-full w-fit text-xs font-medium border whitespace-nowrap",

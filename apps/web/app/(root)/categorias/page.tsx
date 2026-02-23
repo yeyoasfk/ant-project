@@ -1,6 +1,7 @@
 import HeaderBox from '@/components/HeaderBox';
 import CategoryDashboard from '@/components/CategoryDashboard';
 import { createClient } from '@/lib/supabase/server';
+import { getCategories } from '@/lib/actions/category.actions'; // 👈 Importamos la acción
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +12,10 @@ const CategoriasPage = async () => {
 
   if (!user) redirect('/sign-in');
 
-  const loggedInUser = {
-    firstName: user.user_metadata?.first_name || 'Diego',
-  };
+  // 1. Obtenemos las categorías reales de la base de datos
+  const dbCategories = await getCategories();
 
   return (
-    // NOTA: No importamos ni renderizamos RightSidebar aquí
     <section className="flex w-full flex-col gap-8 bg-[#110916] px-5 py-7 lg:px-10 lg:py-12 min-h-screen relative overflow-hidden">
       
       {/* Manchas de luz de fondo (Mesh Gradient simulado) */}
@@ -32,8 +31,8 @@ const CategoriasPage = async () => {
           />
         </header>
 
-        {/* Componente Interactivo que acabamos de crear */}
-        <CategoryDashboard />
+        {/* 2. Le pasamos los datos reales al componente */}
+        <CategoryDashboard initialCategories={dbCategories} />
       </div>
     </section>
   );
