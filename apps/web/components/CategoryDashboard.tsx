@@ -3,26 +3,12 @@
 import { useState, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { formatAmount } from '@/lib/utils';
+import { formatAmount, getCategoryIcon } from '@/lib/utils';
 import { ArrowLeft, LayoutGrid, Plus, X, Loader2, Edit2, Trash2 } from 'lucide-react'; 
 import GlassContainer from './GlassContainer';
 import { createCategory, updateCategory, deleteCategory } from '@/lib/actions/category.actions';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-// 🧠 Función para auto-asignar un ícono dependiendo del nombre
-const getCategoryIcon = (name: string) => {
-  const lowerName = name.toLowerCase();
-  if (lowerName.includes('comida') || lowerName.includes('restaurant')) return '🍔';
-  if (lowerName.includes('transporte') || lowerName.includes('uber')) return '🚌';
-  if (lowerName.includes('suscripci') || lowerName.includes('netflix')) return '🎬';
-  if (lowerName.includes('cuenta') || lowerName.includes('servicio')) return '📄';
-  if (lowerName.includes('salida') || lowerName.includes('ocio')) return '🍻';
-  if (lowerName.includes('ropa') || lowerName.includes('shopping')) return '👕';
-  if (lowerName.includes('mascota') || lowerName.includes('perro') || lowerName.includes('gato')) return '🐶';
-  if (lowerName.includes('gimnasio') || lowerName.includes('deporte')) return '🏋️';
-  return '💰'; // Ícono por defecto
-};
 
 export default function CategoryDashboard({ initialCategories = [] }: { initialCategories?: any[] }) {
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
@@ -88,7 +74,7 @@ export default function CategoryDashboard({ initialCategories = [] }: { initialC
       id: cat.id,
       name: cat.name,
       limit: Number(cat.budget_limit) || 1, 
-      spent: 0, 
+      spent: cat.spent || 0, 
       icon: getCategoryIcon(cat.name),
       color: cat.color || '#9333ea',
     }));

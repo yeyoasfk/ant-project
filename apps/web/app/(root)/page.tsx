@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import RightSidebar from '@/components/RightSidebar';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }) => {
   const params = await searchParams;
@@ -77,14 +78,20 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
     .filter((e: any) => e.id && !isNaN(e.amount))
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  // 🧠 NUEVO CÁLCULO: Gastos Hormiga del Mes Actual
+  // 🧠 NUEVO CÁLCULO CIENTÍFICO: Gastos Hormiga Reales del Mes Actual
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
   const monthlyAntExpenses = sanitizedGlobalExpenses
-    .filter((e: any) => e.date >= firstDayOfMonth && (e.type === 'debit' || e.amount < 0))
+    .filter((e: any) => {
+      const isThisMonth = e.date >= firstDayOfMonth;
+      const isExpense = e.type === 'debit' || e.amount < 0;
+      const isActuallyAnt = e.antCategory === "Gasto Hormiga"; // 🐜 AQUÍ ESTÁ LA MAGIA
+      
+      return isThisMonth && isExpense && isActuallyAnt;
+    })
     .reduce((acc: number, curr: any) => acc + Math.abs(curr.amount), 0);
-
+    
   return (
     <section className="flex w-full flex-col lg:flex-row overflow-hidden">
       <div className="flex w-full flex-1 flex-col gap-6 sm:gap-8 px-4 sm:px-6 md:px-8 py-6 sm:py-8 overflow-y-auto">

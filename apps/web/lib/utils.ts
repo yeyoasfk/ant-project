@@ -130,3 +130,17 @@ export const authFormSchema = (type: 'sign-in' | 'sign-up') => {
       }, "Año de nacimiento no válido."),
   })
 }
+
+// 🧠 Función para auto-asignar un emoji a una categoría dependiendo del nombre
+export const getCategoryIcon = (name: string): string => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('comida') || lowerName.includes('restaurant')) return '🍔';
+  if (lowerName.includes('transporte') || lowerName.includes('uber')) return '🚌';
+  if (lowerName.includes('suscripci') || lowerName.includes('netflix')) return '🎬';
+  if (lowerName.includes('cuenta') || lowerName.includes('servicio')) return '📄';
+  if (lowerName.includes('salida') || lowerName.includes('ocio')) return '🍻';
+  if (lowerName.includes('ropa') || lowerName.includes('shopping')) return '👕';
+  if (lowerName.includes('mascota') || lowerName.includes('perro') || lowerName.includes('gato')) return '🐶';
+  if (lowerName.includes('gimnasio') || lowerName.includes('deporte')) return '🏋️';
+  return '💰'; // Ícono por defecto
+};

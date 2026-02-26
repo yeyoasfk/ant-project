@@ -1,9 +1,13 @@
 import HeaderBox from '@/components/HeaderBox'
 import TransactionsTable from '@/components/TransactionsTable'
-import BankDropdown from '@/components/BankDropdown' // 👈 Importamos el nuevo componente
+import BankDropdown from '@/components/BankDropdown' 
+import SyncButton from '@/components/SyncButton'
 import { createClient } from '@/lib/supabase/server'
-import { getDetailedAccounts, getAccountMovements } from '@/lib/actions/bank.actions' // 👈 Importamos las nuevas funciones
+import { getDetailedAccounts, getAccountMovements } from '@/lib/actions/bank.actions' 
 import { redirect } from 'next/navigation'
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface SearchParamProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -11,7 +15,7 @@ interface SearchParamProps {
 
 const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
   const params = await searchParams;
-  const urlAccountId = (params.id as string);
+  const urlAccountId = (params?.id as string);
 
   // 1. Verificamos usuario
   const supabase = await createClient();
@@ -37,19 +41,27 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
     ? allAccounts.find(a => a.fintocAccountId === urlAccountId) || allAccounts[0]
     : allAccounts[0];
 
-  // 5. Obtenemos los movimientos SOLO de la cuenta seleccionada
+  // 5. 🧠 Obtenemos las categorías del usuario para enviarlas al Modal
+  const { data: categories } = await supabase.from('categories').select('*').eq('user_id', user.id);
+
+  // 6. Obtenemos los movimientos SOLO de la cuenta seleccionada
   let filteredTransactions: any[] = [];
   if (currentAccount) {
+    // Esto ahora trae los datos desde tu tabla 'transactions' en Supabase, no directo de Fintoc
     const rawTransactions = await getAccountMovements(currentAccount.linkToken, currentAccount.fintocAccountId);
 
-    // Mapeamos para la tabla
+    // 🧠 Mapeamos inyectando TODOS los datos inteligentes para la tabla y el modal
     filteredTransactions = rawTransactions.map((t: any) => ({
-      id: t.id,
+      id: t.id, // ID original de Fintoc
+      db_id: t.db_id, // 👈 CRÍTICO: Tu ID local para poder editarlo
       accountId: currentAccount.fintocAccountId,
       name: t.description,
       amount: Math.abs(t.amount),
       date: t.date,
-      category: t.antCategory,
+      categoryId: t.categoryId,
+      categoryName: t.categoryName,
+      categoryColor: t.categoryColor,
+      isAnt: t.antCategory === "Gasto Hormiga", // 👈 El interruptor booleano de la hormiga
       type: t.type
     }));
   }
@@ -72,12 +84,21 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
 
         {/* TABLA DE TRANSACCIONES */}
         <div className="rounded-2xl border border-white/10 bg-[#1f1019]/60 backdrop-blur-xl p-4 shadow-2xl">
-          <div className="mb-4 flex items-center justify-between px-2">
+          <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
             <h2 className="text-18 font-bold text-white">Movimientos de la cuenta</h2>
+            
+            {/* BOTÓN DE ACTUALIZACIÓN MANUAL (INTENT GRATUITO) */}
+            {currentAccount && (
+              <SyncButton linkToken={currentAccount.linkToken} />
+            )}
           </div>
 
           {filteredTransactions.length > 0 ? (
-            <TransactionsTable transactions={filteredTransactions} />
+            // 👈 PASAMOS LOS MOVIMIENTOS Y LAS CATEGORÍAS A LA TABLA
+            <TransactionsTable 
+              transactions={filteredTransactions} 
+              categories={categories || []} 
+            />
           ) : (
             <div className="py-10 text-center text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
               No hay movimientos recientes en esta cuenta.
