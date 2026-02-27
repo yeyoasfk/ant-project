@@ -10,7 +10,7 @@ import { createCategory, updateCategory, deleteCategory } from '@/lib/actions/ca
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export default function CategoryDashboard({ initialCategories = [] }: { initialCategories?: any[] }) {
+export default function CategoryDashboard({ initialCategories = [], transactions = [] }: { initialCategories?: any[], transactions?: any[] }) {
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
   const [timeframe, setTimeframe] = useState<'dia' | 'semana' | 'mes'>('semana');
 
@@ -81,6 +81,7 @@ export default function CategoryDashboard({ initialCategories = [] }: { initialC
   }, [initialCategories]);
 
   const chartData = useMemo(() => {
+    // 1. SI NO HAY CATEGORÍA SELECCIONADA: Muestra el Top 7 General
     if (!selectedCategory) {
       const top7 = [...categoriesData]
         .sort((a, b) => (b.spent / b.limit) - (a.spent / a.limit))
@@ -111,18 +112,60 @@ export default function CategoryDashboard({ initialCategories = [] }: { initialC
       };
     }
 
+    // 2. SI HAY CATEGORÍA SELECCIONADA: Filtramos sus transacciones reales
     let labels: string[] = [];
     let data: number[] = [];
+    
+    // Filtramos solo los gastos de esta categoría
+    const catTransactions = transactions.filter(t => t.category_id === selectedCategory.id);
 
     if (timeframe === 'semana') {
       labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       data = [0, 0, 0, 0, 0, 0, 0];
+      
+      catTransactions.forEach(t => {
+        if (!t.date) return; // 🛡️ Protección si el banco no envía fecha
+        const d = new Date(t.date);
+        let day = d.getDay() - 1; // getDay() da 0 para Domingo. Lo ajustamos a Lunes=0
+        if (day === -1) day = 6; // Si era Domingo, va a la última barra
+        
+        // 🛡️ Asignación segura para TypeScript
+        data[day] = (data[day] || 0) + Math.abs(Number(t.amount));
+      });
+
     } else if (timeframe === 'mes') {
-      labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+      labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4+'];
       data = [0, 0, 0, 0];
+      
+      catTransactions.forEach(t => {
+        if (!t.date) return;
+        const d = new Date(t.date);
+        const dayOfMonth = d.getDate();
+        let week = Math.floor((dayOfMonth - 1) / 7);
+        if (week > 3) week = 3; // Agrupamos el final del mes en la última barra
+        
+        // 🛡️ Asignación segura para TypeScript
+        data[week] = (data[week] || 0) + Math.abs(Number(t.amount));
+      });
+
     } else if (timeframe === 'dia') {
       labels = ['Mañana', 'Tarde', 'Noche'];
       data = [0, 0, 0];
+      
+      catTransactions.forEach(t => {
+        if (!t.date) return;
+        const d = new Date(t.date);
+        const hour = d.getHours();
+        
+        // 🛡️ Asignación segura para TypeScript
+        if (hour < 12) {
+          data[0] = (data[0] || 0) + Math.abs(Number(t.amount));
+        } else if (hour < 20) {
+          data[1] = (data[1] || 0) + Math.abs(Number(t.amount));
+        } else {
+          data[2] = (data[2] || 0) + Math.abs(Number(t.amount));
+        }
+      });
     }
 
     return {
@@ -137,7 +180,7 @@ export default function CategoryDashboard({ initialCategories = [] }: { initialC
         }
       ]
     };
-  }, [selectedCategory, timeframe, categoriesData]);
+  }, [selectedCategory, timeframe, categoriesData, transactions]);
 
   const chartOptions: any = {
     responsive: true,

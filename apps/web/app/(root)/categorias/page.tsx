@@ -25,7 +25,7 @@ const PresupuestosPage = async () => {
 
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('amount, category_id, type')
+    .select('amount, category_id, type, date')
     .eq('user_id', user.id)
     .eq('type', 'debit') // Solo sumamos las salidas de dinero (gastos)
     .gte('date', firstDayOfMonth); // Desde el día 1 de este mes
@@ -52,8 +52,11 @@ const PresupuestosPage = async () => {
       />
 
       <div className="w-full">
-        {/* Le enviamos las categorías ya calculadas al componente */}
-        <CategoryDashboard initialCategories={categoriesWithSpent} />
+        {/* 👈 LE PASAMOS LAS TRANSACCIONES REALES */}
+        <CategoryDashboard 
+          initialCategories={categoriesWithSpent} 
+          transactions={transactions || []} 
+        />
       </div>
     </div>
   )
