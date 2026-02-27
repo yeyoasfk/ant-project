@@ -54,6 +54,10 @@ const CategoryBadge = ({ name, color, isAnt }: { name: string, color?: string, i
 const TransactionsTable = ({ transactions, categories }: TransactionsTableProps) => {
   const [sortConfig, setSortConfig] = useState<{ key: string | null, direction: string | null }>({ key: null, direction: null });
   
+  // 🧠 ESTADOS DE EXPANSIÓN DE LA TABLA
+  const [isExpanded, setIsExpanded] = useState(false);
+  const INITIAL_LIMIT = 5; // 👈 Cantidad de movimientos a mostrar al inicio
+  
   // 🧠 ESTADOS DEL MODAL INTELIGENTE
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,7 +78,6 @@ const TransactionsTable = ({ transactions, categories }: TransactionsTableProps)
     setIsCategoryDropdownOpen(false);
     
     // 🛡️ Sugerencia automática de palabra clave (a prueba de fallos)
-    // Aseguramos que siempre haya un string, aunque el nombre venga vacío
     const safeName = tx.name || '';
     const firstWord = safeName.split(' ')[0] || '';
     
@@ -129,14 +132,17 @@ const TransactionsTable = ({ transactions, categories }: TransactionsTableProps)
   };
 
   const sortedData = getSortedTransactions();
+  // ✂️ Recortamos los datos dependiendo del estado "isExpanded"
+  const displayedData = isExpanded ? sortedData : sortedData.slice(0, INITIAL_LIMIT);
+  const hasMore = sortedData.length > INITIAL_LIMIT;
 
   return (
     <>
-      <GlassContainer size="lg" className="p-0 md:p-0">
+      <GlassContainer size="lg" className="p-0 md:p-0 overflow-hidden relative">
 
         {/* 📱 VISTA MÓVIL (Celulares) */}
         <div className="flex flex-col divide-y divide-white/5 md:hidden">
-          {sortedData.map((t: Transaction) => {
+          {displayedData.map((t: Transaction) => {
             const status = getTransactionStatus(new Date(t.date));
             const isDebit = t.type === 'debit';
 
@@ -186,7 +192,7 @@ const TransactionsTable = ({ transactions, categories }: TransactionsTableProps)
               </tr>
             </thead>
             <tbody>
-              {sortedData.map((t: Transaction) => {
+              {displayedData.map((t: Transaction) => {
                 const isDebit = t.type === 'debit';
                 return (
                   <tr 
@@ -217,6 +223,22 @@ const TransactionsTable = ({ transactions, categories }: TransactionsTableProps)
             </tbody>
           </table>
         </div>
+
+        {/* 🔽 BOTÓN MOSTRAR MÁS / MENOS */}
+        {hasMore && (
+          <div className="flex justify-center p-4 border-t border-white/5 bg-gradient-to-t from-[#1a0b21]/80 to-transparent">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-2 px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all text-sm font-semibold shadow-sm hover:shadow-glow-purple"
+            >
+              {isExpanded 
+                ? 'Mostrar menos 🔼' 
+                : `Mostrar más (${sortedData.length - INITIAL_LIMIT}) 🔽`
+              }
+            </button>
+          </div>
+        )}
+
       </GlassContainer>
 
       {/* 🧠 MODAL CATEGORIZACIÓN - CENTRADO SIN FONDO MORADO */}

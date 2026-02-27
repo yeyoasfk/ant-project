@@ -6,7 +6,11 @@ import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const PresupuestosPage = async () => {
+// 👈 1. AÑADIMOS searchParams PARA LEER LA URL
+const PresupuestosPage = async ({ searchParams }: { searchParams: Promise<{ categoryId?: string }> }) => {
+  const params = await searchParams;
+  const targetCategoryId = params?.categoryId as string;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -19,7 +23,6 @@ const PresupuestosPage = async () => {
     .eq('user_id', user.id);
 
   // 2. 🧠 OBTENEMOS LOS GASTOS DE ESTE MES
-  // Calculamos el primer día del mes actual para no sumar gastos viejos a tu presupuesto actual
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
@@ -32,15 +35,12 @@ const PresupuestosPage = async () => {
 
   // 3. 🧮 EL MATEMÁTICO: Sumamos los gastos por cada categoría
   const categoriesWithSpent = (categories || []).map(cat => {
-    // Filtramos los movimientos que pertenecen a esta categoría
     const catTransactions = (transactions || []).filter(t => t.category_id === cat.id);
-    
-    // Sumamos los montos (usamos Math.abs para asegurar que sean números positivos)
     const totalSpent = catTransactions.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
     return {
       ...cat,
-      spent: totalSpent // 👈 Aquí inyectamos la suma real
+      spent: totalSpent 
     };
   });
 
@@ -52,10 +52,11 @@ const PresupuestosPage = async () => {
       />
 
       <div className="w-full">
-        {/* 👈 LE PASAMOS LAS TRANSACCIONES REALES */}
+        {/* 👈 2. LE PASAMOS EL ID AL DASHBOARD */}
         <CategoryDashboard 
           initialCategories={categoriesWithSpent} 
           transactions={transactions || []} 
+          targetCategoryId={targetCategoryId} 
         />
       </div>
     </div>

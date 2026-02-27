@@ -91,6 +91,8 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
       return isThisMonth && isExpense && isActuallyAnt;
     })
     .reduce((acc: number, curr: any) => acc + Math.abs(curr.amount), 0);
+  
+  const { data: categories } = await supabase.from('categories').select('*').eq('user_id', user.id);
     
   return (
     <section className="flex w-full flex-col lg:flex-row overflow-hidden">
@@ -123,6 +125,7 @@ const Home = async ({ searchParams }: { searchParams: Promise<{ id?: string }> }
           user={loggedInUser}
           transactions={sanitizedGlobalExpenses} 
           banks={allAccounts.slice(0, 2)}
+          categories={categories || []} // 👈 ¡Nuevo dato inyectado!
         />
       </div>
     </section>

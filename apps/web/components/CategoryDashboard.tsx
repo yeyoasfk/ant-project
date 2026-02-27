@@ -1,16 +1,19 @@
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { formatAmount, getCategoryIcon } from '@/lib/utils';
 import { ArrowLeft, LayoutGrid, Plus, X, Loader2, Edit2, Trash2 } from 'lucide-react'; 
 import GlassContainer from './GlassContainer';
 import { createCategory, updateCategory, deleteCategory } from '@/lib/actions/category.actions';
+import { useRouter } from 'next/navigation';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export default function CategoryDashboard({ initialCategories = [], transactions = [] }: { initialCategories?: any[], transactions?: any[] }) {
+// 👈 1. AÑADIMOS EL NUEVO PROP targetCategoryId
+export default function CategoryDashboard({ initialCategories = [], transactions = [], targetCategoryId }: { initialCategories?: any[], transactions?: any[], targetCategoryId?: string }) {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
   const [timeframe, setTimeframe] = useState<'dia' | 'semana' | 'mes'>('semana');
 
@@ -20,6 +23,23 @@ export default function CategoryDashboard({ initialCategories = [], transactions
   const [newName, setNewName] = useState('');
   const [newLimit, setNewLimit] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 🧠 2. EL EFECTO DE AUTOCLICK
+  // Si venimos del Home con un ID, buscamos la categoría y la seleccionamos
+  useEffect(() => {
+    if (targetCategoryId && initialCategories.length > 0) {
+      const targetCat = initialCategories.find(c => c.id === targetCategoryId);
+      if (targetCat) {
+        setSelectedCategory(targetCat);
+      }
+    }
+  }, [targetCategoryId, initialCategories]);
+
+  // 🧹 3. LIMPIAR LA URL (Para que si cierra la vista, la URL vuelva a la normalidad)
+  const handleCloseView = () => {
+    setSelectedCategory(null);
+    router.replace('/categorias', { scroll: false }); 
+  };
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
@@ -81,7 +101,6 @@ export default function CategoryDashboard({ initialCategories = [], transactions
   }, [initialCategories]);
 
   const chartData = useMemo(() => {
-    // 1. SI NO HAY CATEGORÍA SELECCIONADA: Muestra el Top 7 General
     if (!selectedCategory) {
       const top7 = [...categoriesData]
         .sort((a, b) => (b.spent / b.limit) - (a.spent / a.limit))
@@ -112,11 +131,9 @@ export default function CategoryDashboard({ initialCategories = [], transactions
       };
     }
 
-    // 2. SI HAY CATEGORÍA SELECCIONADA: Filtramos sus transacciones reales
     let labels: string[] = [];
     let data: number[] = [];
     
-    // Filtramos solo los gastos de esta categoría
     const catTransactions = transactions.filter(t => t.category_id === selectedCategory.id);
 
     if (timeframe === 'semana') {
@@ -124,12 +141,10 @@ export default function CategoryDashboard({ initialCategories = [], transactions
       data = [0, 0, 0, 0, 0, 0, 0];
       
       catTransactions.forEach(t => {
-        if (!t.date) return; // 🛡️ Protección si el banco no envía fecha
+        if (!t.date) return; 
         const d = new Date(t.date);
-        let day = d.getDay() - 1; // getDay() da 0 para Domingo. Lo ajustamos a Lunes=0
-        if (day === -1) day = 6; // Si era Domingo, va a la última barra
-        
-        // 🛡️ Asignación segura para TypeScript
+        let day = d.getDay() - 1; 
+        if (day === -1) day = 6; 
         data[day] = (data[day] || 0) + Math.abs(Number(t.amount));
       });
 
@@ -142,9 +157,7 @@ export default function CategoryDashboard({ initialCategories = [], transactions
         const d = new Date(t.date);
         const dayOfMonth = d.getDate();
         let week = Math.floor((dayOfMonth - 1) / 7);
-        if (week > 3) week = 3; // Agrupamos el final del mes en la última barra
-        
-        // 🛡️ Asignación segura para TypeScript
+        if (week > 3) week = 3; 
         data[week] = (data[week] || 0) + Math.abs(Number(t.amount));
       });
 
@@ -157,7 +170,6 @@ export default function CategoryDashboard({ initialCategories = [], transactions
         const d = new Date(t.date);
         const hour = d.getHours();
         
-        // 🛡️ Asignación segura para TypeScript
         if (hour < 12) {
           data[0] = (data[0] || 0) + Math.abs(Number(t.amount));
         } else if (hour < 20) {
@@ -222,7 +234,8 @@ export default function CategoryDashboard({ initialCategories = [], transactions
           <div className="flex items-start md:items-center gap-2 md:gap-3">
             {selectedCategory ? (
               <>
-                <button onClick={() => setSelectedCategory(null)} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition-colors flex-shrink-0">
+                {/* 👈 4. CAMBIAMOS EL BOTÓN ATRÁS PARA QUE LIMPIE LA URL */}
+                <button onClick={handleCloseView} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 transition-colors flex-shrink-0">
                   <ArrowLeft className="size-4 md:size-5" />
                 </button>
                 <div>
@@ -231,7 +244,6 @@ export default function CategoryDashboard({ initialCategories = [], transactions
                       {selectedCategory.icon} Análisis: {selectedCategory.name}
                     </h2>
                     
-                    {/* 👈 BOTONES SIEMPRE VISIBLES PARA TODAS LAS CATEGORÍAS */}
                     <div className="flex items-center gap-1 bg-black/20 rounded-lg p-0.5 border border-white/5">
                       <button onClick={handleOpenEdit} className="p-1.5 rounded-md hover:bg-white/10 text-gray-400 hover:text-white transition-colors" title="Editar Categoría">
                         <Edit2 className="size-3.5" />
