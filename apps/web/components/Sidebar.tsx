@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '../lib/utils'
-import { Home, CreditCard, History, PieChart } from 'lucide-react' // 👈 1. Importamos PieChart
+import { Home, CreditCard, History, PieChart, Bug } from 'lucide-react'
 import Footer from './Footer'
 
 // Definimos los links de navegación - exportado para ser reutilizado en MobileNav
@@ -9,7 +9,8 @@ export const sidebarLinks = [
   { icon: Home, route: '/', label: 'Inicio' },
   { icon: CreditCard, route: '/my-banks', label: 'Mis Bancos' },
   { icon: History, route: '/transaction-history', label: 'Historial' },
-  { icon: PieChart, route: '/categorias', label: 'Presupuestos' }, // 👈 2. Agregamos el nuevo botón
+  { icon: PieChart, route: '/categorias', label: 'Presupuestos' },
+  { icon: Bug, route: '/hormiga', label: 'Hormiga' },
 ]
 
 const Sidebar = ({ user }: { user: any }) => {
