@@ -23,24 +23,20 @@ const CHILEAN_BANKS: Record<string, string> = {
 const FINTOC_SECRET_KEY = process.env.FINTOC_SECRET_KEY!;
 
 /**
- * 🧠 NUEVO: EL CEREBRO DE HORMIGA (Sincronizador Fintoc -> Supabase)
- * Toma datos en vivo, aplica tus reglas y los guarda en tu Bóveda.
+ * 🧠 EL CEREBRO DE HORMIGA
  */
 async function syncTransactionsToDatabase(userId: string, accountId: string, fintocMoves: any[]) {
   const supabase = await createClient();
   if (!fintocMoves || fintocMoves.length === 0) return;
 
-  // 1. Descargamos tu motor de reglas
   const { data: rules } = await supabase.from('transaction_rules').select('*').eq('user_id', userId);
 
-  // 2. Procesamos cada movimiento (El Filtro)
   const transactionsToSave = fintocMoves.map((mov: any) => {
     const amount = typeof mov.amount === 'number' ? mov.amount : Number(mov.amount) || 0;
     const description = mov.description || mov.name || 'Sin descripción';
     const date = mov.transaction_date || mov.post_date || new Date().toISOString();
     const type = amount < 0 ? 'debit' : 'credit';
 
-    // 🎯 Aplicar Reglas Inteligentes
     let categoryId = null;
     if (rules && rules.length > 0) {
       const matchedRule = rules.find((r: any) => 
@@ -49,7 +45,6 @@ async function syncTransactionsToDatabase(userId: string, accountId: string, fin
       if (matchedRule) categoryId = matchedRule.category_id;
     }
 
-    // 🐜 Detectar Gasto Hormiga (Menos de $5000 y que sea un gasto, no un ingreso)
     const isAnt = amount < 0 && Math.abs(amount) <= 5000;
 
     return {
@@ -65,16 +60,14 @@ async function syncTransactionsToDatabase(userId: string, accountId: string, fin
     };
   });
 
-  // 3. Guardar en la DB (Ignorando los que ya existen para no duplicar)
   const { error } = await supabase
     .from('transactions')
     .upsert(transactionsToSave, { 
       onConflict: 'fintoc_transaction_id', 
-      ignoreDuplicates: true // 🛡️ ESCUDO ANTI-DUPLICADOS
+      ignoreDuplicates: true 
     });
 
   if (error) console.error("❌ Error guardando en DB:", error.message);
-  else console.log(`✅ [Brain] Sincronizados movimientos en la bóveda para la cuenta ${accountId}`);
 }
 
 /**
@@ -120,42 +113,49 @@ export async function linkBankAccount({ fintocId, institutionName, institutionId
 }
 
 /**
- * 2. OBTENER GASTOS (AHORA LEE DESDE TU BASE DE DATOS)
+ * 2. OBTENER GASTOS GLOBALES
  */
 export async function getAntExpenses(linkToken: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
+  // 🛡️ OBTENER CUENTAS OCULTAS
+  let hiddenAccountIds: string[] = [];
+  const { data: hiddenData } = await supabase.from('hidden_accounts').select('account_id').eq('user_id', user.id);
+  if (hiddenData) hiddenAccountIds = hiddenData.map(h => h.account_id);
+
   const headers = { 'Authorization': FINTOC_SECRET_KEY, 'Content-Type': 'application/json' };
 
   try {
-    // 1. Ir a Fintoc por datos nuevos
     const accountsRes = await fetch(`https://api.fintoc.com/v1/accounts?link_token=${linkToken}`, { headers, next: { revalidate: 0 } });
     if (accountsRes.ok) {
       const accounts = await accountsRes.json();
       if (Array.isArray(accounts)) {
         for (const account of accounts) {
+          if (hiddenAccountIds.includes(account.id)) continue; // 🚫 Ignorar fetch
+
           const moveRes = await fetch(`https://api.fintoc.com/v1/accounts/${account.id}/movements?link_token=${linkToken}&limit=100`, { headers, next: { revalidate: 0 } });
           if (moveRes.ok) {
             const moves = await moveRes.json();
-            // 2. Pasar por el Cerebro y guardar en DB
             if (Array.isArray(moves)) await syncTransactionsToDatabase(user.id, account.id, moves);
           }
         }
       }
     }
 
-    // 3. LEER DE LA BASE DE DATOS (Para la UI)
     const { data: dbTransactions } = await supabase
       .from('transactions')
-      .select('*, category:categories(name, color)') // Traemos la info de la categoría unida
+      .select('*, category:categories(name, color)')
       .eq('user_id', user.id)
       .order('date', { ascending: false });
 
     if (!dbTransactions) return [];
 
-    return dbTransactions.map(t => ({
+    // 🚫 PURGA DE HISTORIAL: Excluimos transacciones si su cuenta fue apagada
+    const visibleTransactions = dbTransactions.filter(t => !hiddenAccountIds.includes(t.account_id));
+
+    return visibleTransactions.map(t => ({
       id: t.fintoc_transaction_id,
       db_id: t.id,
       description: t.description,
@@ -175,10 +175,20 @@ export async function getAntExpenses(linkToken: string) {
 }
 
 /**
- * 3. OBTENER DETALLES DE CUENTAS (Dropdown)
+ * 3. OBTENER DETALLES DE CUENTAS 
+ * 🆕 Ahora acepta un parámetro (includeHidden) que por defecto es FALSE.
  */
-export async function getDetailedAccounts(dbLinks: any[]) {
+export async function getDetailedAccounts(dbLinks: any[], includeHidden: boolean = false) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   let allAccounts: any[] = [];
+  
+  let hiddenAccountIds: string[] = [];
+  if (user) {
+    const { data: hiddenData } = await supabase.from('hidden_accounts').select('account_id').eq('user_id', user.id);
+    if (hiddenData) hiddenAccountIds = hiddenData.map(h => h.account_id);
+  }
+
   const headers = { 'Authorization': process.env.FINTOC_SECRET_KEY!, 'Content-Type': 'application/json' };
 
   for (const link of dbLinks) {
@@ -188,6 +198,11 @@ export async function getDetailedAccounts(dbLinks: any[]) {
       const fintocAccounts = await res.json();
       
       fintocAccounts.forEach((acc: any) => {
+        const isHidden = hiddenAccountIds.includes(acc.id);
+        
+        // 🚫 MAGIA: Si no pedimos cuentas ocultas explícitamente, las eliminamos de la lista
+        if (!includeHidden && isHidden) return; 
+
         const officialBankName = CHILEAN_BANKS[link.institution_id] || link.institution_name || 'Banco Desconocido';
         allAccounts.push({
           fintocAccountId: acc.id,
@@ -195,8 +210,10 @@ export async function getDetailedAccounts(dbLinks: any[]) {
           institutionName: officialBankName,
           name: acc.name,
           number: acc.number || '0000',
-          type: acc.type,
+          type: acc.type, 
+          currency: acc.currency, 
           currentBalance: acc.balance?.current || 0,
+          isHidden: isHidden
         });
       });
     } catch (e) { console.error("Error obteniendo detalles de cuenta:", e); }
@@ -205,24 +222,28 @@ export async function getDetailedAccounts(dbLinks: any[]) {
 }
 
 /**
- * 4. OBTENER MOVIMIENTOS DE UNA SOLA CUENTA (AHORA LEE DESDE TU BASE DE DATOS)
+ * 4. OBTENER MOVIMIENTOS DE UNA SOLA CUENTA
  */
 export async function getAccountMovements(linkToken: string, accountId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
+  // 🛡️ Verificar si la cuenta está oculta
+  let hiddenAccountIds: string[] = [];
+  const { data: hiddenData } = await supabase.from('hidden_accounts').select('account_id').eq('user_id', user.id);
+  if (hiddenData) hiddenAccountIds = hiddenData.map(h => h.account_id);
+  
+  if (hiddenAccountIds.includes(accountId)) return []; // 🚫 Bloqueo de seguridad
+
   const headers = { 'Authorization': process.env.FINTOC_SECRET_KEY!, 'Content-Type': 'application/json' };
   try {
-    // 1. Fintoc
     const res = await fetch(`https://api.fintoc.com/v1/accounts/${accountId}/movements?link_token=${linkToken}&limit=100`, { headers, next: { revalidate: 0 } });
     if (res.ok) {
       const moves = await res.json();
-      // 2. Cerebro -> Supabase
       if (Array.isArray(moves)) await syncTransactionsToDatabase(user.id, accountId, moves);
     }
 
-    // 3. Devolver datos de Supabase ordenados y listos
     const { data: dbTransactions } = await supabase
       .from('transactions')
       .select('*, category:categories(name, color)')
@@ -268,6 +289,27 @@ export async function forceBankSync(linkToken: string) {
     }
     const data = await response.json();
     return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 🎛️ INTERRUPTOR DE CUENTAS (Ocultar/Mostrar)
+ */
+export async function toggleAccountVisibility(accountId: string, hide: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'No autenticado' };
+
+  try {
+    if (hide) {
+      await supabase.from('hidden_accounts').insert({ user_id: user.id, account_id: accountId });
+    } else {
+      await supabase.from('hidden_accounts').delete().match({ user_id: user.id, account_id: accountId });
+    }
+    revalidatePath('/');
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
