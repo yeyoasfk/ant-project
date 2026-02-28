@@ -69,7 +69,6 @@ async function syncTransactionsToDatabase(userId: string, accountId: string, fin
 
   if (error) console.error("❌ Error guardando en DB:", error.message);
 }
-
 /**
  * 1. GUARDAR CUENTA EN SUPABASE
  */
@@ -78,38 +77,89 @@ export async function linkBankAccount({ fintocId, institutionName, institutionId
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Usuario no autenticado")
 
-  let finalToken: string;
+  let finalToken = fintocId; 
   let backendInstitutionName = institutionName; 
   let backendInstitutionId = institutionId; 
 
   try {
-    const exchangeResponse = await fetch(`https://api.fintoc.com/v1/links/exchange?exchange_token=${encodeURIComponent(fintocId)}`, {
-      method: 'GET',
-      headers: { 'Authorization': FINTOC_SECRET_KEY, 'Content-Type': 'application/json' }
-    });
+    console.log("🔐 [Fintoc] Procesando exchangeToken:", fintocId.substring(0, 20) + "...");
 
-    if (exchangeResponse.ok) {
+    // 🔄 FLUJO ESTÁNDAR: El widget devuelve exchangeToken que debemos intercambiar por link_token
+    // Este es el flujo recomendado por Fintoc
+    if (!fintocId.startsWith('link_')) {
+      console.log("📋 [Fintoc] Detectado exchangeToken, intercambiando por link_token seguro...");
+      
+      const exchangeUrl = `https://api.fintoc.com/v1/links/exchange?exchange_token=${encodeURIComponent(fintocId)}`;
+      console.log("🌐 [Fintoc] GET a:", exchangeUrl.substring(0, 80) + "...");
+      
+      const exchangeResponse = await fetch(exchangeUrl, {
+        method: 'GET',
+        headers: { 'Authorization': FINTOC_SECRET_KEY, 'Content-Type': 'application/json' }
+      });
+
+      if (!exchangeResponse.ok) {
+        const errorText = await exchangeResponse.text();
+        throw new Error(`❌ Error intercambiando token (${exchangeResponse.status}): ${errorText}`);
+      }
+
       const data = await exchangeResponse.json();
       finalToken = data.link_token;
+      
+      if (!finalToken) {
+        throw new Error("❌ Fintoc no devolvió link_token en la respuesta: " + JSON.stringify(data));
+      }
+
+      // 🏦 Si Fintoc devuelve institución en la respuesta, actualizar
       if (data.institution) {
         backendInstitutionName = data.institution.name;
         backendInstitutionId = data.institution.id;
+        console.log("🏦 [Fintoc] Institución actualizada desde exchange:", backendInstitutionName);
       }
-      if (!finalToken) throw new Error("Fintoc no devolvió link_token válido");
+
+      console.log("✅ [Fintoc] Link token obtenido:", finalToken.substring(0, 20) + "...");
+
+    // 🛡️ COMPATIBILIDAD: Token final directo (empieza con 'link_')
     } else {
-      throw new Error(`Error al intercambiar token: ${exchangeResponse.status}`);
+      console.log("✅ [Fintoc] Detectado link_token directo, usando tal cual.");
+      finalToken = fintocId;
     }
+
+    console.log("💾 [Fintoc] Guardando en BD:", { institutionName: backendInstitutionName, tokenPrefix: finalToken.substring(0, 20) });
+
+    const { error } = await supabase.from('bank_accounts').insert({
+      user_id: user.id, 
+      fintoc_id: finalToken, 
+      institution_name: backendInstitutionName, 
+      institution_id: backendInstitutionId
+    });
+
+    if (error) {
+      console.error("❌ [Supabase] Error insertando:", error.message);
+      throw error;
+    }
+
+    console.log("✅ [Supabase] Cuenta guardada, iniciando sincronización...");
+    
+    // 🔄 SINCRONIZACIÓN INICIAL: Obtener cuentas y movimientos del usuario
+    try {
+      const allAccounts = await getDetailedAccounts([{ fintoc_id: finalToken, institution_name: backendInstitutionName, institution_id: backendInstitutionId }]);
+      console.log("✅ [Fintoc] Sincronización inicial completada:", allAccounts.length, "cuentas");
+      
+      // Sincronizar movimientos para cada cuenta
+      for (const account of allAccounts) {
+        await getAccountMovements(account.linkToken, account.fintocAccountId);
+      }
+      console.log("✅ [Fintoc] Movimientos sincronizados para todas las cuentas");
+    } catch (syncErr) {
+      console.warn("⚠️ [Fintoc] Sincronización inicial tuvo problemas (no es crítico):", syncErr);
+    }
+
+    revalidatePath('/')
+    return { success: true }
   } catch (err: any) {
+    console.error("❌ [Fintoc] Error en linkBankAccount:", err.message);
     throw err;
   }
-
-  const { error } = await supabase.from('bank_accounts').insert({
-    user_id: user.id, fintoc_id: finalToken, institution_name: backendInstitutionName, institution_id: backendInstitutionId
-  });
-
-  if (error) return { success: false, error: error.message }
-  revalidatePath('/')
-  return { success: true }
 }
 
 /**
@@ -139,9 +189,15 @@ export async function getAntExpenses(linkToken: string) {
           if (moveRes.ok) {
             const moves = await moveRes.json();
             if (Array.isArray(moves)) await syncTransactionsToDatabase(user.id, account.id, moves);
+          } else {
+            const errorText = await moveRes.text();
+            console.error(`❌ [Fintoc] Error en getAntExpenses movimientos (status ${moveRes.status}, account: ${account.id}, token: ${linkToken.substring(0, 20)}...): ${errorText}`);
           }
         }
       }
+    } else {
+      const errorText = await accountsRes.text();
+      console.error(`❌ [Fintoc] Error en getAntExpenses cuentas (status ${accountsRes.status}, token: ${linkToken.substring(0, 20)}...): ${errorText}`);
     }
 
     const { data: dbTransactions } = await supabase
@@ -194,7 +250,11 @@ export async function getDetailedAccounts(dbLinks: any[], includeHidden: boolean
   for (const link of dbLinks) {
     try {
       const res = await fetch(`https://api.fintoc.com/v1/accounts?link_token=${link.fintoc_id}`, { headers, next: { revalidate: 0 } });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`❌ [Fintoc] Error obteniendo cuentas (status ${res.status}, token: ${link.fintoc_id.substring(0, 20)}...): ${errorText}`);
+        continue;
+      }
       const fintocAccounts = await res.json();
       
       fintocAccounts.forEach((acc: any) => {
@@ -242,6 +302,9 @@ export async function getAccountMovements(linkToken: string, accountId: string) 
     if (res.ok) {
       const moves = await res.json();
       if (Array.isArray(moves)) await syncTransactionsToDatabase(user.id, accountId, moves);
+    } else {
+      const errorText = await res.text();
+      console.error(`❌ [Fintoc] Error en getAccountMovements (status ${res.status}, accountId: ${accountId}, token: ${linkToken.substring(0, 20)}...): ${errorText}`);
     }
 
     const { data: dbTransactions } = await supabase
