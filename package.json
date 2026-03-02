@@ -16,5 +16,8 @@
   "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@fintoc/fintoc-js": "^1.1.2"
   }
 }

@@ -1,37 +1,47 @@
 import { useState, useEffect } from 'react';
+import { linkBankAccount } from '@/lib/actions/bank.actions';
 
-// Esto evita que TypeScript reclame por window.Fintoc
+// ─────────────────────────────────────────────────────────────────────────────
+// useFintoc — Hook para el widget de Fintoc (flujo Link Intents)
+//
+// 1. Backend: POST /api/fintoc/intent → widget_token (encapsula product/holderType/country)
+// 2. Fintoc.create({ publicKey, widgetToken }) → widget con sesión de backend
+// 3. onSuccess: exchangeToken → linkBankAccount (intercambia por link_token)
+// ─────────────────────────────────────────────────────────────────────────────
+
 declare global {
   interface Window {
     Fintoc: any;
   }
 }
 
-// Fíjate aquí: "export const" (Exportación Nombrada)
 export const useFintoc = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    if (window.Fintoc) { setIsReady(true); return; }
+
+    const existingScript = document.getElementById('fintoc-v1');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setIsReady(true));
+      return;
+    }
+
     const script = document.createElement('script');
     script.src = 'https://js.fintoc.com/v1/';
+    script.id = 'fintoc-v1';
     script.async = true;
     script.onload = () => {
-      console.log('✅ Script de Fintoc cargado');
+      console.log('✅ [useFintoc] Script de Fintoc cargado.');
       setIsReady(true);
     };
+    script.onerror = () => console.error('❌ [useFintoc] Error cargando el script.');
     document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
   }, []);
 
-  // Esta es la función clave: openWidget
   const openWidget = async () => {
-    if (!isReady) {
+    if (!isReady || !window.Fintoc) {
       alert('Espera un segundo, Fintoc aún está cargando...');
       return;
     }
@@ -39,65 +49,62 @@ export const useFintoc = () => {
     setIsLoading(true);
 
     try {
-      console.log('🎫 Pidiendo pase (Intent) al servidor...');
       const response = await fetch('/api/fintoc/intent', { method: 'POST' });
-      
-      if (!response.ok) {
-        throw new Error('Error al contactar al servidor (Intent)');
-      }
+      if (!response.ok) throw new Error('Error al contactar al servidor (Intent)');
 
       const data = await response.json();
-      console.log('🎟️ Pase recibido:', data);
-
-      if (!data.widget_token) {
-        throw new Error('El servidor no devolvió un widget_token');
-      }
+      const widgetToken = data.widget_token ?? data.widgetToken;
+      if (!widgetToken) throw new Error('El servidor no devolvió un widget_token');
 
       const widget = window.Fintoc.create({
-        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY,
-        widgetToken: data.widget_token,
-        onSuccess: async (linkIntent: any) => {
-          console.log('🎉 Éxito! Intent completado:', linkIntent);
-          
-          // En el flujo Intent, el token viene aquí
-          const exchangeToken = linkIntent.exchangeToken; 
+        publicKey: process.env.NEXT_PUBLIC_FINTOC_PUBLIC_KEY!,
+        widgetToken,
 
-          console.log("buscando tokem.....",{
-            loQueLlega: linkIntent,
-            exchangeTokenLeido: exchangeToken
-          });
+        onSuccess: async (linkIntent: any) => {
+          console.log('📋 [useFintoc] onSuccess:', JSON.stringify(linkIntent, null, 2));
+
+          const exchangeToken =
+            linkIntent?.exchangeToken ??
+            linkIntent?.exchange_token ??
+            linkIntent?.exchangetoken;
 
           if (!exchangeToken) {
-             alert('Error: Fintoc no entregó el token de intercambio');
-             return;
+            console.error('❌ [useFintoc] exchangeToken ausente:', linkIntent);
+            alert('Error: Fintoc no entregó el token de intercambio.');
+            setIsLoading(false);
+            return;
           }
 
-          // Enviamos a sincronizar
-          try {
-             await fetch('/api/fintoc/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ exchange_token: exchangeToken })
-             });
-             
-             alert('¡Conexión Exitosa! Recarga la página para ver tus gastos.');
-             window.location.reload();
+          const institutionData = linkIntent?.institution || linkIntent?.link?.institution || {};
 
-          } catch (err) {
-             console.error(err);
-             alert('Cuenta vinculada, pero hubo un error guardando los datos.');
+          try {
+            await linkBankAccount({
+              exchangeToken,
+              institutionName: institutionData.name || 'Banco Desconocido',
+              institutionId: institutionData.id || 'id_desconocido',
+            });
+            window.location.assign('/transaction-history');
+          } catch (err: any) {
+            alert('Error al vincular: ' + err.message);
+            setIsLoading(false);
           }
         },
+
         onExit: () => {
-          console.log('Usuario cerró el widget');
+          console.log('🚪 [useFintoc] Usuario cerró el widget.');
           setIsLoading(false);
+        },
+
+        onEvent: (event: any) => {
+          const eventType = event?.type ?? event ?? '(desconocido)';
+          console.log('📡 [useFintoc] Evento:', eventType);
         },
       });
 
       widget.open();
 
     } catch (error: any) {
-      console.error('❌ Error en openWidget:', error);
+      console.error('❌ [useFintoc] Error:', error);
       alert(`Error iniciando conexión: ${error.message}`);
       setIsLoading(false);
     }
