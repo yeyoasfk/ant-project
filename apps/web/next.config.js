@@ -1,4 +1,23 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  logging: {
+    fetches: {
+      fullUrl: false,
+    },
+  },
 
-export default nextConfig;
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'date-fns',
+      'recharts',
+    ],
+  },
+
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
+}
+
+export default nextConfig

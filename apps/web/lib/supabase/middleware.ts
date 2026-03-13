@@ -1,12 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// ✅ ESTE archivo exporta "updateSession", NO "middleware"
+const PUBLIC_PATHS = ['/sign-in', '/sign-up']
+
 export async function updateSession(request: NextRequest) {
+  const path = request.nextUrl.pathname
+
+  // ✅ Rutas públicas: NO llamamos a Supabase en absoluto
+  // Solo dejamos pasar el request sin tocar cookies ni hacer auth
+  const isPublicPath = PUBLIC_PATHS.some(p => path === p)
+  if (isPublicPath) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
+  // ✅ Solo para rutas protegidas: verificamos sesión
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -18,11 +27,11 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
@@ -32,17 +41,12 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // getUser() es la única forma segura — no hay workaround aquí
   const { data: { user } } = await supabase.auth.getUser()
 
-  const path = request.nextUrl.pathname;
-  const isPublicPath = path === '/sign-in' || path === '/sign-up' || path.startsWith('/auth');
-
-  if (!user && !isPublicPath) {
+  if (!user) {
+    // No autenticado → redirige a login
     return NextResponse.redirect(new URL('/sign-in', request.url))
-  }
-
-  if (user && isPublicPath && !path.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response
